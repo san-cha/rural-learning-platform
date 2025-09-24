@@ -1,14 +1,3 @@
-import { Globe, User } from "lucide-react";
-import { Button } from "./components/ui/button";
-import { OfflineBadge } from "./components/OfflineBadge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 export const Header = ({ user, currentLanguage = "en", onLanguageChange }) => {
   const languages = [
     { code: "en", name: "English" },
@@ -16,37 +5,34 @@ export const Header = ({ user, currentLanguage = "en", onLanguageChange }) => {
   ];
 
   return (
-    <header className="bg-card border-b border-border px-4 py-3 lg:px-6">
+    <header className="bg-white border-b border-gray-200 px-4 py-3 lg:px-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-primary">📚 Rural Learning</h1>
-          <OfflineBadge />
+        <div className="flex items-center gap-3">
+          <span className="text-xl">📚</span>
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Rural Learning</h1>
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Language Switcher */}
           <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <Select value={currentLanguage} onValueChange={onLanguageChange}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {lang.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label htmlFor="lang" className="text-sm text-gray-600">Language</label>
+            <select
+              id="lang"
+              value={currentLanguage}
+              onChange={(e) => onLanguageChange?.(e.target.value)}
+              className="w-32 rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+            >
+              {languages.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* User Info */}
           {user && (
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4" />
+            <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700">
               <span className="font-medium">{user.name}</span>
-              <span className="text-muted-foreground">({user.role})</span>
+              <span className="text-gray-500">({user.role})</span>
             </div>
           )}
         </div>
