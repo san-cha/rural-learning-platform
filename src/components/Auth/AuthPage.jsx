@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 
 
 const App = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,10 +43,25 @@ const App = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    //fake api call for now
+
+    // fake API call
     setTimeout(() => {
-      console.log('Login attempt with:', formData.loginIdentifier, formData.password, formData.role);
+      console.log(
+        "Login attempt with:",
+        formData.loginIdentifier,
+        formData.password,
+        formData.role
+      );
       setIsLoading(false);
+
+      // ✅ Navigate based on role
+      if (formData.role === "student") {
+        navigate("/student-dashboard");
+      } else if (formData.role === "teacher") {
+        navigate("/teacher-dashboard"); // optional
+      } else if (formData.role === "admin_ngo") {
+        navigate("/admin-dashboard"); // optional
+      }
     }, 1500);
   };
 
