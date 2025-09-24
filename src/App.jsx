@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./components/AuthContext";
-import LandingPage from "./components/LandingPage";
-import Login from "./components/Login";
-import Signup from "./components/Signup";
+import { AuthPage } from "./components/Auth/AuthPage.jsx";
 
 function App() {
   const [user, setUser] = useState(null); // state hook
@@ -12,9 +9,7 @@ function App() {
     <AuthProvider value={{ user, setUser }}>
       <Router>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/" element={<AuthPage />} />
         </Routes>
       </Router>
     </AuthProvider>
