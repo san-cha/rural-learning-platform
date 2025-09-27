@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Header } from "../Header.jsx";
+import { Header } from "../../components/Header.jsx";
  // adjust import based on your structure
 import { useNavigate } from "react-router-dom";
 

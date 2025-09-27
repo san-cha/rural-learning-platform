@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Header } from "../Header.jsx";
+import { Header } from "../../components/Header.jsx";
 
 export default function LessonDetail() {
   const { id } = useParams();
