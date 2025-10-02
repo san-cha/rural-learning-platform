@@ -4,6 +4,8 @@ import StudentDashboard from "./modules/student/StudentDashboard.jsx";
 import LessonDetail from "./modules/student/LessonDetail.jsx";
 import Landing from "./pages/Landing.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
+import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
+import TeacherClasses from "./modules/teacher/TeacherClasses.jsx";
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           <Route path="/lesson/:id" element={<LessonDetail />} /> {/* Added Lesson Detail route */}
+          <Route path="/teacher-dashboard/*" element={<TeacherDashboard />} /> {/* Teacher Dashboard with nested routes */}
+          <Route path="/teacher-classes" element={<TeacherClasses />} />
         </Routes>
       </Router>
     </AuthProvider>
