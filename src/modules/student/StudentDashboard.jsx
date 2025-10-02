@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Header } from "../Header.jsx";
- // adjust import based on your structure
+import  Header from "../../components/Header.jsx";
 import { useNavigate } from "react-router-dom";
 
 export default function StudentDashboard() {
@@ -63,7 +62,7 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Top Header */}
       <Header
-        user={{ name: student.name, role: student.role }}
+        user={{ name: "Sanjana Chavan", role: "Student" }}
         currentLanguage={language}
         onLanguageChange={setLanguage}
       />
