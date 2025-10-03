@@ -1,11 +1,7 @@
 import { Mail, Phone, MapPin, Send, Loader } from 'lucide-react';
 import React, { useState, useEffect } from 'react'; // Added useEffect
+import Header from '../components/Header.jsx';
 
-/**
- * Contact Us page designed with a modern, high-contrast style.
- * It features a blue header, an overlapping white content card,
- * and a single-column layout focused entirely on the contact form.
- */
 export default function Contact() {
   
   // State for form data, submission status, and user feedback message
@@ -13,14 +9,13 @@ export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionMessage, setSubmissionMessage] = useState({ text: '', type: '' });
 
-  // Scroll to the top of the page whenever the component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []); // Empty dependency array ensures it runs only once on load
+  }, []); 
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
-    // Clear message on new input
+
     if (submissionMessage.text) setSubmissionMessage({ text: '', type: '' });
   };
   
@@ -29,14 +24,11 @@ export default function Contact() {
     setIsSubmitting(true);
     setSubmissionMessage({ text: '', type: '' });
 
-    // --- Placeholder for MERN API integration ---
     try {
-      // Simulate API call delay (e.g., waiting for Express/MongoDB response)
       await new Promise(resolve => setTimeout(resolve, 1500)); 
       
       console.log("Form data ready to send:", formData);
       
-      // Simulate a successful response
       setSubmissionMessage({ 
         text: 'Thank you for your message!', 
         type: 'success' 
@@ -52,7 +44,6 @@ export default function Contact() {
     } finally {
       setIsSubmitting(false);
     }
-    // ------------------------------------------
   };
   
   const contactInfo = [
@@ -66,7 +57,14 @@ export default function Contact() {
     ? 'bg-green-100 border-green-400 text-green-700' 
     : 'bg-red-100 border-red-400 text-red-700';
 
+  const [language, setLanguage] = useState("en");
   return (
+    <div>
+      <Header
+        user={{ name: "Sanjana", role: "Student" }}
+        currentLanguage={language}
+        onLanguageChange={setLanguage}
+      />
     <div className="w-full bg-gray-50 pb-20">
       
       {/* 1. Dynamic Header Section (Blue Background) */}
@@ -192,6 +190,7 @@ export default function Contact() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

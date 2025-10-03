@@ -9,9 +9,9 @@ import Landing from "./pages/Landing.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
 import TeacherClasses from "./modules/teacher/TeacherClasses.jsx";
-import About from './pages/about';
-import Contact from './pages/contact';
-import ErrorPage from "./pages/error";
+import About from './pages/About.jsx';
+import Contact from './pages/Contact.jsx';
+import ErrorPage from "./pages/Error.jsx";
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 
 function App() {
