@@ -74,7 +74,7 @@ const Landing = () => {
         <section id="features" className="py-20 px-4 bg-muted/40">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold mb-4 md:text-4xl">Why LearnHub?</h2>
+              <h2 className="text-3xl font-bold mb-4 md:text-4xl">Why SarvaShiksha?</h2>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
                 Built specifically for rural education needs, making quality learning accessible to everyone.
               </p>
