@@ -26,10 +26,8 @@ function App() {
           <Route path="/lesson/:id" element={<LessonDetail />} /> {/* Added Lesson Detail route */}
           <Route path="/assessment/:id" element={<Assessment />} /> {/* Added Assessment route */}
           <Route path="/student-courses" element={<StudentCourses />} />
-
           <Route path="/teacher-dashboard/*" element={<TeacherDashboard />} /> {/* Teacher Dashboard with nested routes */}
           <Route path="/teacher-classes" element={<TeacherClasses />} />
-
           {/* Catch-all route for 404 */}
           <Route path="*" element={<ErrorPage />} />
 
