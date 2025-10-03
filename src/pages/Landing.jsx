@@ -62,7 +62,7 @@ const Landing = () => {
             {/* Right Column: Image */}
             <div className="animate-fade-in flex items-center justify-center">
                             <img
-                src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=2070&auto=format&fit=crop"
+                src="https://i.pinimg.com/736x/be/de/4a/bede4a665a16d1e9541346b95e3f16c8.jpg"
                 alt="Students collaborating in a bright, modern classroom"
                 className="rounded-lg shadow-2xl w-full max-w-lg"
               />
@@ -104,7 +104,7 @@ const Landing = () => {
           <div className="container mx-auto max-w-4xl text-center">
             <h2 className="text-3xl font-bold mb-4">Get Started Today</h2>
             <p className="text-muted-foreground mb-8 text-lg">
-              Join thousands of students already learning with LearnHub.
+              Join thousands of students already learning with SarvaShiksha.
             </p>
             <Link to="/auth">
               <Button size="lg" className="h-12 px-8 rounded-full text-base">
