@@ -40,7 +40,7 @@ const Landing = () => {
                 <Link to="/auth">
                   <Button
                     size="lg"
-                    className="h-12 px-8 rounded-md text-base bg-white text-blue-600 font-semibold hover:bg-gray-100 shadow-lg transition-transform transform hover:scale-105"
+                    className="h-12 px-8 rounded-md text-base !bg-blue-500 !text-white font-semibold hover:bg-gray-100 shadow-lg transition-transform transform hover:scale-105"
                   >
                     Get Started
                   </Button>
