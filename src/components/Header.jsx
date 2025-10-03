@@ -57,12 +57,12 @@ const Header = () => {
           >
             Features
           </a>
-          <a
-            href="#contact"
+          <Link
+            to="/contact" // Use 'to' instead of 'href', and set the route path
             className="text-sm font-medium text-slate-600 transition-colors hover:text-blue-600"
           >
             Contact
-          </a>
+          </Link>
         </nav>
 
         {/* Right-side Controls */}

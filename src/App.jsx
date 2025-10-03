@@ -8,6 +8,9 @@ import Landing from "./pages/Landing.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
 import TeacherClasses from "./modules/teacher/TeacherClasses.jsx";
+import About from './pages/about';
+import Contact from './pages/contact';
+import ErrorPage from "./pages/error";
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 
 function App() {
@@ -16,13 +19,20 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<Landing />} /> {/* khajuria add home page link*/}
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
           <Route path="/lesson/:id" element={<LessonDetail />} /> {/* Added Lesson Detail route */}
           <Route path="/assessment/:id" element={<Assessment />} /> {/* Added Assessment route */}
           <Route path="/student-courses" element={<StudentCourses />} />
+
           <Route path="/teacher-dashboard/*" element={<TeacherDashboard />} /> {/* Teacher Dashboard with nested routes */}
           <Route path="/teacher-classes" element={<TeacherClasses />} />
+
+          {/* Catch-all route for 404 */}
+          <Route path="*" element={<ErrorPage />} />
+
         </Routes>
       </Router>
     </AuthProvider>
