@@ -1,0 +1,67 @@
+export const lessons = [
+  {
+    id: "1",
+    title: "Mathematics",
+    description: "Explore the world of numbers, from basic arithmetic to the fundamentals of algebra and geometry. This lesson makes math fun and practical.",
+    duration: 480, // in seconds (8 mins)
+    subject: "Mathematics",
+    grade: "5",
+    isCompleted: false,
+    progress: 75,
+    imageUrl: "https://images.pexels.com/photos/220326/pexels-photo-220326.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    students: "1.5k",
+    transcript: `Welcome to Mathematics! Today, we'll start with the magic of multiplication. Think of it as fast adding. If you have 3 baskets with 4 apples each, you can add 4+4+4, or you can multiply 3 times 4 to get 12!`,
+  },
+  {
+    id: "2",
+    title: "Science",
+    description: "Discover the wonders of the natural world, from the life cycle of a plant to the vastness of our solar system. Interactive lessons bring biology and chemistry to life.",
+    duration: 600, // 10 mins
+    subject: "Science",
+    grade: "5",
+    isCompleted: false,
+    progress: 60,
+    imageUrl: "https://images.pexels.com/photos/2280571/pexels-photo-2280571.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    students: "1.2k",
+    transcript: `Hello, young scientists! In this lesson, we explore photosynthesis. It's how plants eat! They use sunlight, water, and a gas called carbon dioxide to make their own food. This is why plants are so important for our planet.`,
+  },
+  {
+    id: "3",
+    title: "English",
+    description: "Master the art of communication. Learn about grammar, sentence structure, and how to read and write compelling stories and essays.",
+    duration: 540, // 9 mins
+    subject: "English",
+    grade: "5",
+    isCompleted: true,
+    progress: 90,
+    imageUrl: "https://images.pexels.com/photos/256541/pexels-photo-256541.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    students: "1.8k",
+    transcript: `Welcome, storytellers! Today's topic is 'adjectives'. Adjectives are describing words. Instead of saying 'The cat sat', we can say 'The *fluffy*, *orange* cat sat on the *warm* mat.' See how much better that is?`,
+  },
+    {
+    id: "4",
+    title: "Social Studies (SST)",
+    description: "Travel through time and across the globe! Learn about important historical events, different cultures, and the basics of geography and civics.",
+    duration: 720, // 12 mins
+    subject: "Social Studies",
+    grade: "5",
+    isCompleted: false,
+    progress: 45,
+    imageUrl: "https://images.pexels.com/photos/592753/pexels-photo-592753.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    students: "950",
+    transcript: `Greetings, explorers! In this lesson, we'll learn about maps. A map is a drawing of a place from above. We'll look at the compass rose, which shows us North, South, East, and West, helping us navigate our world.`,
+  },
+  {
+    id: "5",
+    title: "Hindi",
+    description: "Improve your reading, writing, and speaking skills in Hindi. Learn new vocabulary, understand grammar, and practice conversations.",
+    duration: 450, // 7.5 mins
+    subject: "Hindi",
+    grade: "5",
+    isCompleted: false,
+    progress: 55,
+    imageUrl: "https://images.unsplash.com/photo-1657302156083-2e61fb23d161?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    students: "800",
+    transcript: `नमस्ते! Welcome to our Hindi lesson. Today we will learn the words for family members. 'माता' (Mata) means Mother. 'पिता' (Pita) means Father. Let's practice saying them together...`,
+  },
+];

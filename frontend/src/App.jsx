@@ -52,9 +52,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AuthPage from "./pages/AuthPage.jsx";
 import StudentDashboard from "./modules/student/StudentDashboard.jsx";
 import LessonDetail from "./modules/student/LessonDetail.jsx";
-import Assessment from "./modules/student/Assessment";
-import StudentCourses from "./modules/student/StudentCourses";
-import StudentNotifications from "./modules/student/StudentNotifications";
+import Assessment from "./modules/student/Assessment.jsx";
+import StudentCourses from "./modules/student/StudentCourses.jsx";
+import StudentNotifications from "./modules/student/StudentNotifications.jsx";
 import Landing from "./pages/Landing.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
@@ -63,7 +63,7 @@ import AdminDashboard from "./modules/admin/AdminDashboard.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
 import ErrorPage from "./pages/Error.jsx";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 // NOTE: keep this link tag in index.html or public/index.html for correct HTML placement
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 
