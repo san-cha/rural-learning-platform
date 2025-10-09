@@ -2,10 +2,13 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import dotenv from "dotenv";
 
 const router = express.Router();
+dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -19,13 +22,10 @@ const createToken = (user) => {
 };
 
 router.post("/register", async (req, res) => {
-  const { name, email, phone, dob, role, password, confirmPassword } = req.body;
+  const { name, email, phone, dob, role, password } = req.body;
 
   if (!name || !email || !phone || !dob || !role || !password) {
     return res.status(400).json({ msg: "Please enter all fields" });
-  }
-  if (password !== confirmPassword) {
-    return res.status(400).json({ msg: "Passwords do not match" });
   }
 
   try {

@@ -1,79 +1,63 @@
-// import { createContext, useContext, useState } from "react";
-// import axios from 'axios';
-
-// // 1. Create the context
-// const AuthContext = createContext();
-
-// // 2. Create a provider component
-// export const AuthProvider = ({ children }) => {
-//   const [user, setUser] = useState(null); // 'null' means user is not logged in
-
-//   // Mock login function - in a real app, this would be an API call
-//   const login = (userData) => {
-//     setUser(userData);
-//   };
-
-//   // Mock logout function
-//   const logout = () => {
-//     setUser(null);
-//   };
-
-//   const value = { user, login, logout };
-
-//   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-// };
-
-// // 3. Create a custom hook to easily use the context
-// export const useAuth = () => {
-//   return useContext(AuthContext);
-// };
-
 // src/context/AuthContext.jsx
-import { createContext, useContext, useState } from "react";
-import axios from "../api/axiosInstance"; // uses the Axios instance you'll create
+
+import { createContext, useContext, useEffect, useState } from "react";
+import axios from "../api/axiosInstance"; // Assumes Axios is configured with `withCredentials: true`
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // to handle session check on initial load
 
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  // Automatically check if user is logged in (by checking /auth/me)
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, { withCredentials: true });
+        setUser(res.data.user);
+      } catch (err) {
+        setUser(null); // Not logged in or token invalid
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Real login function (calls backend)
+    checkUser();
+  }, []);
+
   const login = async (email, password) => {
     try {
-      const res = await axios.post("/auth/login", { email, password });
-      // expected backend response: { token: '...', user: { ... } }
-      const { user: userData, token: jwt } = res.data;
-
-      setUser(userData);
-      setToken(jwt);
-
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("token", jwt);
-
+      const res = await axios.post(
+        "/auth/login",
+        { email, password },
+        { withCredentials: true } // Important: to receive and send the auth cookie
+      );
+      setUser(res.data.user);
       return { success: true };
     } catch (err) {
-      console.error("Login error:", err);
-      return { success: false, message: err?.response?.data?.message || "Login failed" };
+      return {
+        success: false,
+        message: err?.response?.data?.msg || "Login failed",
+      };
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    // optional: notify backend / revoke session
-    window.location.href = "/login"; // force redirect to login
+  const logout = async () => {
+    try {
+      await axios.post("/auth/logout", {}, { withCredentials: true });
+    } catch (err) {
+      console.error("Logout failed", err);
+    } finally {
+      setUser(null);
+      window.location.href = "/login";
+    }
   };
 
-  const value = { user, token, login, logout };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

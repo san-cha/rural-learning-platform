@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
 
 // Define initial states outside the component for easy resetting
 const initialLoginState = {
@@ -120,29 +121,31 @@ const App = () => {
       setError("Passwords do not match.");
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Send registerData, excluding the confirmPassword field
-        body: JSON.stringify({
-          fullName: registerData.fullName,
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
+        {
+          name: registerData.fullName,
           email: registerData.email,
-          phoneNumber: registerData.phoneNumber,
+          phone: registerData.phoneNumber,
           dob: registerData.dob,
           password: registerData.password,
           role: registerData.role,
-        }),
-      });
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
 
-      const data = await res.json();
+      const data = res.data;
 
       if (data.success) {
-        alert("Registration successful! Please login."); // Alert is ok for success confirmation
+        
         setActiveTab("login");
       } else {
         setError(data.message || "Registration failed. Please try again.");
