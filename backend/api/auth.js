@@ -1,12 +1,23 @@
-// backend/routes/auth.js
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js"; // Import the database model
+import User from "../models/User.js";
 
 const router = express.Router();
 
-// ## REGISTER ROUTE ##
+const JWT_SECRET = process.env.JWT_SECRET;
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const createToken = (user) => {
+  const payload = { user: { id: user.id, role: user.role, name: user.name } };
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "5h" });
+};
+
 router.post("/register", async (req, res) => {
   const { name, email, phone, dob, role, password, confirmPassword } = req.body;
 
@@ -23,19 +34,19 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ msg: "User already exists" });
     }
 
-    // Create new user (password will be hashed automatically by the model)
     user = new User({ name, email, phone, dob, role, password });
     await user.save();
-    
-    res.status(201).json({ msg: "User registered successfully!" });
 
+    const token = createToken(user);
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    res.status(201).json({ msg: "User registered successfully!", user: { id: user._id, name, email, role } });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
   }
 });
 
-// ## LOGIN ROUTE ##
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -49,22 +60,40 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
 
-    // Compare submitted password with the hashed password in the database
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ msg: "Invalid credentials" });
     }
-    
-    // Create and return a JSON Web Token (JWT) for authentication
-    const payload = { user: { id: user.id, role: user.role } };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5h" });
 
-    res.json({ token });
+    const token = createToken(user);
 
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    res.json({ msg: "Logged in successfully", user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
   }
+});
+
+router.get("/me", (req, res) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return res.status(401).json({ msg: "No token, authorization denied" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    res.json({ user: decoded.user });
+  } catch (err) {
+    res.status(401).json({ msg: "Token is not valid" });
+  }
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie("token", COOKIE_OPTIONS);
+  res.json({ msg: "Logged out successfully" });
 });
 
 export default router;
