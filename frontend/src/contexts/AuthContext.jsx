@@ -7,16 +7,14 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // to handle session check on initial load
-
-  // Automatically check if user is logged in (by checking /auth/me)
+  const [loading, setLoading] = useState(true); 
   useEffect(() => {
     const checkUser = async () => {
       try {
         const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, { withCredentials: true });
         setUser(res.data.user);
       } catch (err) {
-        setUser(null); // Not logged in or token invalid
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -30,7 +28,7 @@ export const AuthProvider = ({ children }) => {
       const res = await axios.post(
         "/auth/login",
         { email, password },
-        { withCredentials: true } // Important: to receive and send the auth cookie
+        { withCredentials: true }
       );
       setUser(res.data.user);
       return { success: true };
@@ -49,7 +47,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Logout failed", err);
     } finally {
       setUser(null);
-      window.location.href = "/login";
+      window.location.href = "/auth";
     }
   };
 

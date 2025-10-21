@@ -20,7 +20,7 @@ const initialRegisterState = {
 };
 
 
-const App = () => {
+const AuthPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('login');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,10 +38,8 @@ const App = () => {
   const roles = [
     { value: 'student', label: 'Student' },
     { value: 'teacher', label: 'Teacher' },
-    { value: 'admin_ngo', label: 'Admin/NGO' },
+    { value: 'admin', label: 'Admin/NGO' },
   ];
-
-  // FIX 3: Reset forms and errors when the user switches tabs for a cleaner experience.
   useEffect(() => {
     setError(null);
     setIsLoading(false);
@@ -85,7 +83,7 @@ const App = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
+      const res = await fetch("http://localhost:5000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -452,5 +450,5 @@ const App = () => {
   );
 };
 
-export default App;
+export default AuthPage;
 
