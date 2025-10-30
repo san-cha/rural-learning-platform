@@ -22,7 +22,8 @@ instance.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       // redirect to login (causes full reload but is simple & reliable)
-      window.location.href = "/login";
+      // window.location.href = "/login";
+      
     }
     return Promise.reject(error);
   }
