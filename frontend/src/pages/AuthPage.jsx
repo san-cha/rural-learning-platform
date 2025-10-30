@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
+import { useAuth } from "../contexts/AuthContext";
 
-// Define initial states outside the component for easy resetting
 const initialLoginState = {
   loginIdentifier: '',
   password: '',
@@ -22,14 +22,13 @@ const initialRegisterState = {
 
 const AuthPage = () => {
   const navigate = useNavigate();
+  const { user, login } = useAuth();
   const [activeTab, setActiveTab] = useState('login');
   const [isLoading, setIsLoading] = useState(false);
   
-  // FIX 1: Separated form state for Login and Register to prevent data leakage.
   const [loginData, setLoginData] = useState(initialLoginState);
   const [registerData, setRegisterData] = useState(initialRegisterState);
 
-  // FIX 2: Added a dedicated state for displaying user-friendly error messages instead of using alert().
   const [error, setError] = useState(null);
 
   const [isLoginDropdownOpen, setIsLoginDropdownOpen] = useState(false);
@@ -47,12 +46,21 @@ const AuthPage = () => {
     setRegisterData(initialRegisterState);
   }, [activeTab]);
 
+  useEffect(() => {
+    // If already logged in, redirect to dashboard for their role
+    if (user && user.role) {
+      if (user.role === "student") navigate("/student-dashboard", { replace: true });
+      else if (user.role === "teacher") navigate("/teacher-dashboard", { replace: true });
+      else if (user.role === "admin") navigate("/admin-dashboard", { replace: true });
+      else navigate("/", { replace: true });
+    }
+  }, [user, navigate]);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setError(null); // Clear error when user starts typing
+    setError(null); 
 
-    // Update the correct state object based on the active tab
     if (activeTab === 'login') {
       setLoginData(prevData => ({ ...prevData, [name]: value }));
     } else {
@@ -75,38 +83,25 @@ const AuthPage = () => {
     setIsLoading(true);
     setError(null);
 
-    // Basic validation
     if (!loginData.loginIdentifier || !loginData.password || !loginData.role) {
-        setError("All fields are required.");
-        setIsLoading(false);
-        return;
+      setError("All fields are required.");
+      setIsLoading(false);
+      return;
     }
 
-    try {
-      const res = await fetch("http://localhost:5000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          loginIdentifier: loginData.loginIdentifier,
-          password: loginData.password,
-          role: loginData.role,
-        }),
-      });
+    const result = await login(
+      loginData.loginIdentifier,
+      loginData.password,
+      loginData.role
+    );
 
-      const data = await res.json();
+    setIsLoading(false);
 
-      if (data.success) {
-        if (data.role === "student") navigate("/student-dashboard");
-        else if (data.role === "teacher") navigate("/teacher-dashboard");
-        else if (data.role === "admin_ngo") navigate("/admin-dashboard");
-      } else {
-        setError(data.message || "Login failed. Please try again.");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("An unexpected error occurred. Please check the console.");
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      // Navigation is handled by the below effect (user context updates)
+      // no need to manually use navigate here
+    } else {
+      setError(result.message || "Login failed. Please try again.");
     }
   };
 
@@ -114,7 +109,6 @@ const AuthPage = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    // FIX 4: Added client-side validation for matching passwords.
     if (registerData.password !== registerData.confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -157,7 +151,6 @@ const AuthPage = () => {
   };
 
 
-  // Helper component for displaying error messages
   const ErrorMessage = ({ message }) => {
     if (!message) return null;
     return (

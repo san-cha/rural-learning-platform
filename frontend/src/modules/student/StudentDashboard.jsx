@@ -19,6 +19,7 @@ import {
   BookCheck,
   TrendingUp,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 // MOCK DATA
 const student = {
@@ -42,6 +43,7 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [studentName] = useState(student.name);
 
   const handleLessonClick = (lessonId) => {
@@ -91,7 +93,7 @@ const StudentDashboard = () => {
             <span className="text-sm font-medium text-slate-700 hidden sm:inline">
               Welcome, {studentName}
             </span>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

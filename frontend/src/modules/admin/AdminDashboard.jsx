@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Users, Globe, Zap, BookOpen, MessageSquare, Smartphone, BarChart, Settings, LogOut, PlusCircle, User, Code } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from "../../contexts/AuthContext";
 
 // --- MOCK DATA FOR DEMONSTRATION ---
 const mockDashboardData = {
@@ -385,6 +387,7 @@ const UsersSection = ({ users, teachers, addNewTeacher }) => {
  */
 const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
   const [activeTab, setActiveTab] = useState('overview');
+  const { logout } = useAuth();
 
   const navigation = useMemo(() => [
     { name: 'Overview', href: 'overview', icon: BarChart, current: activeTab === 'overview' },
@@ -429,12 +432,13 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
   return (
     <div className="min-h-screen bg-gray-100 font-sans p-4 sm:p-6 lg:p-8">
       <header className="flex justify-between items-center py-4 px-4 bg-white shadow-md rounded-xl mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-blue-700">Welcome Admin</h1> 
+        <h1 className="text-xl sm:text-2xl font-bold text-blue-700">
+          <Link to="/">Welcome Admin</Link>
+        </h1>
         <div className="flex items-center space-x-4">
           <span className="text-sm font-medium text-gray-600 hidden sm:block">Admin User</span>
-          {/* Logout button now just logs a message since we removed auth */}
-          <button 
-            onClick={() => console.log('Simulated Logout')}
+          <button
+            onClick={logout}
             className="flex items-center text-red-600 hover:text-red-700 transition duration-150 p-2 rounded-lg hover:bg-red-50"
             aria-label="Log out"
           >

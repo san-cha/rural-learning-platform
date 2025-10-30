@@ -21,6 +21,7 @@ import {
   FileAudio,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Mock Data
 const klasses = [
@@ -54,6 +55,7 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
 );
 
 const TeacherDashboard = () => {
+  const { logout } = useAuth();
   const [teacherName] = useState("Samiksha");
 
   return (
@@ -93,7 +95,7 @@ const TeacherDashboard = () => {
             <span className="text-sm font-medium text-slate-700 hidden sm:inline">
               Welcome, {teacherName}
             </span>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

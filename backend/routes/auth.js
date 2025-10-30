@@ -49,9 +49,9 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-  const { loginIdentifier, password } = req.body;
+  const { loginIdentifier, password, role } = req.body;
 
-  if (!loginIdentifier || !password) {
+  if (!loginIdentifier || !password || !role) {
     return res.status(400).json({ msg: "Please enter all fields" });
   }
 
@@ -62,6 +62,11 @@ router.post("/login", async (req, res) => {
 
     if (!user) {
       return res.status(400).json({ msg: "Invalid credentials" });
+    }
+
+    // Make sure user's role matches what's being logged in as
+    if (user.role !== role) {
+      return res.status(400).json({ msg: "Role does not match. Please check your login role." });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -83,10 +88,11 @@ router.post("/login", async (req, res) => {
         email: user.email,
         role: user.role,
       },
+      token
     });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server error");
+    res.status(500).json({ msg: "Server error" });
   }
 });
 

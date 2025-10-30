@@ -2,16 +2,26 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import axios from "../api/axiosInstance"; // Assumes Axios is configured with `withCredentials: true`
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/auth/me`, { withCredentials: true });
+        // Try user from localStorage first
+        const localUser = localStorage.getItem("user");
+        if (localUser) {
+          setUser(JSON.parse(localUser));
+          setLoading(false);
+          return;
+        }
+        // Fall back to API
+        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/me`, { withCredentials: true });
         setUser(res.data.user);
       } catch (err) {
         setUser(null);
@@ -19,17 +29,18 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-
     checkUser();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (loginIdentifier, password, role) => {
     try {
       const res = await axios.post(
-        "/auth/login",
-        { email, password },
+        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/login`,
+        { loginIdentifier, password, role },
         { withCredentials: true }
       );
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       setUser(res.data.user);
       return { success: true };
     } catch (err) {
@@ -42,12 +53,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post("/auth/logout", {}, { withCredentials: true });
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/logout`, {}, { withCredentials: true });
     } catch (err) {
-      console.error("Logout failed", err);
+      // ignore
     } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       setUser(null);
-      window.location.href = "/auth";
+      navigate("/", { replace: true });
     }
   };
 

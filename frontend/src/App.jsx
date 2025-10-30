@@ -20,8 +20,8 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
@@ -29,17 +29,14 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<AuthPage />} />
 
-          {/* Public student pages (if you want these protected, wrap with ProtectedRoute below) */}
+          {/* Public student pages */}
           <Route path="/lesson/:id" element={<LessonDetail />} />
           <Route path="/assessment/:id" element={<Assessment />} />
           <Route path="/student-courses" element={<StudentCourses />} />
           <Route path="/student-notifications" element={<StudentNotifications />} />
 
-
-
-          {/* Teacher pages (example: protect teacher dashboard & classes) */}
+          {/* Teacher-protected routes */}
           <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
-            {/* teacher-dashboard/* keeps nested routes if TeacherDashboard defines <Routes> inside */}
             <Route path="/teacher-dashboard/*" element={<TeacherDashboard />} />
             <Route path="/teacher-classes" element={<TeacherClasses />} />
           </Route>
@@ -57,8 +54,8 @@ function App() {
           {/* Fallback / 404 */}
           <Route path="*" element={<ErrorPage />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

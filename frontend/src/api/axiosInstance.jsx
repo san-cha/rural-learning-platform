@@ -3,8 +3,8 @@ import axios from "axios";
 
 // baseURL - change to your backend URL or add REACT_APP_API_URL in .env
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
-  // withCredentials: true, // enable if using cookies
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:5000",
+  withCredentials: true
 });
 
 // Attach token from localStorage automatically
