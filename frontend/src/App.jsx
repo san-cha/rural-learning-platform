@@ -10,6 +10,8 @@ import Landing from "./pages/Landing.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
 import TeacherClasses from "./modules/teacher/TeacherClasses.jsx";
+import TeacherCreateClass from "./modules/teacher/TeacherCreateClass.jsx";
+import TeacherGrades from "./modules/teacher/TeacherGrades.jsx";
 import AdminDashboard from "./modules/admin/AdminDashboard.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
@@ -39,6 +41,8 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
             <Route path="/teacher-dashboard/*" element={<TeacherDashboard />} />
             <Route path="/teacher-classes" element={<TeacherClasses />} />
+            <Route path="/teacher-create-class" element={<TeacherCreateClass />} />
+            <Route path="/teacher-grades/:id" element={<TeacherGrades />} />
           </Route>
 
           {/* Admin pages */}

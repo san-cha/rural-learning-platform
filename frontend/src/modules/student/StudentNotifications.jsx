@@ -58,6 +58,9 @@ export default function StudentNotifications() {
       <Header user={{ name: "Sanjana Chavan" }} />
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-4">
+            <a href="/student-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</a>
+          </div>
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
             <div>

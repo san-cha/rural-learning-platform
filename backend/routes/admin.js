@@ -2,6 +2,7 @@ import express from "express";
 import User from "../models/User.js";
 import Teacher from "../models/Teacher.js";
 import Student from "../models/Student.js";
+import ClassModel from "../models/Class.js";
 import { protect, isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -37,5 +38,15 @@ router.get("/students", protect, isAdmin, async (req, res) => {
 });
 
 export default router;
+
+// Extra: list classes (for completeness; UI may or may not use this)
+router.get("/classes", protect, isAdmin, async (req, res) => {
+  try {
+    const classes = await ClassModel.find({}).populate("teacher").populate("enrolledStudents");
+    res.json({ classes });
+  } catch (e) {
+    res.status(500).json({ msg: "Server error" });
+  }
+});
 
 

@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 
 import { createContext, useContext, useEffect, useState } from "react";
-import axios from "../api/axiosInstance"; // Assumes Axios is configured with `withCredentials: true`
+import axios from "../api/axiosInstance.jsx"; // Use configured axios instance
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
@@ -11,34 +11,30 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   useEffect(() => {
+    let isActive = true;
     const checkUser = async () => {
       try {
-        // Try user from localStorage first
         const localUser = localStorage.getItem("user");
         if (localUser) {
-          setUser(JSON.parse(localUser));
-          setLoading(false);
+          if (isActive) setUser(JSON.parse(localUser));
+          if (isActive) setLoading(false);
           return;
         }
-        // Fall back to API
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/me`, { withCredentials: true });
-        setUser(res.data.user);
+        const res = await axios.get('/auth/me', { withCredentials: true });
+        if (isActive) setUser(res?.data?.user || null);
       } catch (err) {
-        setUser(null);
+        if (isActive) setUser(null);
       } finally {
-        setLoading(false);
+        if (isActive) setLoading(false);
       }
     };
     checkUser();
+    return () => { isActive = false; };
   }, []);
 
   const login = async (loginIdentifier, password, role) => {
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/login`,
-        { loginIdentifier, password, role },
-        { withCredentials: true }
-      );
+      const res = await axios.post('/auth/login', { loginIdentifier, password, role }, { withCredentials: true });
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
       setUser(res.data.user);
@@ -53,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/auth/logout`, {}, { withCredentials: true });
+      await axios.post('/auth/logout', {}, { withCredentials: true });
     } catch (err) {
       // ignore
     } finally {

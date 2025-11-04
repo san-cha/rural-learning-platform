@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
 import Button from "../../components/ui/Button.jsx";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Home,
   BookCopy,
@@ -42,6 +42,7 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
 
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -72,17 +73,8 @@ const TeacherDashboard = () => {
     return { totalStudents };
   }, [classes]);
 
-  const handleCreateClass = async () => {
-    const name = window.prompt("Enter class name");
-    if (!name) return;
-    const description = window.prompt("Enter class description (optional)") || "";
-    try {
-      const res = await axios.post("/teacher/classes", { name, description });
-      const created = res?.data?.class;
-      if (created) setClasses((prev) => [created, ...prev]);
-    } catch (e) {
-      setError("Failed to create class");
-    }
+  const handleCreateClass = () => {
+    navigate('/teacher-create-class');
   };
 
   return (
@@ -91,7 +83,7 @@ const TeacherDashboard = () => {
       <div className="hidden border-r bg-blue-900 text-white md:block">
         <div className="flex h-full flex-col gap-2">
           <div className="flex h-16 items-center border-b border-slate-800 px-6">
-            <Link to="/" className="flex items-center gap-2 font-semibold">
+            <Link to="/teacher-dashboard" className="flex items-center gap-2 font-semibold">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500">
                 <BookCopy className="h-5 w-5 text-white" />
               </div>

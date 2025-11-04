@@ -94,9 +94,11 @@ const TeacherClasses = () => {
                       View Class
                     </Button>
                   </Link>
-                  <Button className="text-sm bg-blue-500 text-blue-800 hover:bg-blue-100">
-                    Grade Assignments
-                  </Button>
+                  <Link to={`/teacher-grades/${klass.id}`}>
+                    <Button className="text-sm bg-blue-500 text-blue-800 hover:bg-blue-100">
+                      Grade Assignments
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
