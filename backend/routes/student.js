@@ -1,5 +1,6 @@
 import express from "express";
 import Student from "../models/Student.js";
+import ClassModel from "../models/Class.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -19,5 +20,39 @@ router.get("/classes", protect, async (req, res) => {
 });
 
 export default router;
+
+// Enroll current student into a class by classId
+router.post("/enroll", protect, async (req, res) => {
+  try {
+    const { classId } = req.body;
+    if (!classId) return res.status(400).json({ msg: "classId is required" });
+
+    const klass = await ClassModel.findById(classId);
+    if (!klass) return res.status(404).json({ msg: "Class not found" });
+
+    let student = await Student.findOne({ userId: req.user._id });
+    if (!student) {
+      student = await Student.create({ userId: req.user._id, enrolledClasses: [] });
+    }
+
+    // Add if not present
+    const sId = student._id;
+    const alreadyInStudent = student.enrolledClasses.some((id) => id.toString() === classId);
+    const alreadyInClass = klass.enrolledStudents.some((id) => id.toString() === sId.toString());
+    if (!alreadyInStudent) student.enrolledClasses.push(classId);
+    if (!alreadyInClass) klass.enrolledStudents.push(sId);
+
+    await student.save();
+    await klass.save();
+
+    const populated = await Student.findById(student._id).populate({
+      path: "enrolledClasses",
+      populate: [{ path: "teacher" }, { path: "enrolledStudents" }],
+    });
+    res.status(200).json({ success: true, student: populated });
+  } catch (e) {
+    res.status(500).json({ msg: "Server error" });
+  }
+});
 
 

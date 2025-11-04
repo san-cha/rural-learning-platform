@@ -6,6 +6,7 @@ import LessonDetail from "./modules/student/LessonDetail.jsx";
 import Assessment from "./modules/student/Assessment.jsx";
 import StudentCourses from "./modules/student/StudentCourses.jsx";
 import StudentNotifications from "./modules/student/StudentNotifications.jsx";
+import StudentEnroll from "./modules/student/StudentEnroll.jsx";
 import Landing from "./pages/Landing.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
 import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
@@ -36,6 +37,7 @@ function App() {
           <Route path="/assessment/:id" element={<Assessment />} />
           <Route path="/student-courses" element={<StudentCourses />} />
           <Route path="/student-notifications" element={<StudentNotifications />} />
+          <Route path="/student-enroll" element={<StudentEnroll />} />
 
           {/* Teacher-protected routes */}
           <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>

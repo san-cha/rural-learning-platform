@@ -65,7 +65,7 @@ const TeacherClasses = () => {
           </Button>
         </header>
         <div className="mb-4">
-          <a href="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</a>
+          <Link to="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

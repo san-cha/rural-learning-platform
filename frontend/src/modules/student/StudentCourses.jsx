@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '../../components/Header.jsx';
 import Footer from '../../components/Footer.jsx';
 import axios from '../../api/axiosInstance.jsx';
@@ -86,8 +86,9 @@ export default function StudentCourses() {
       />
       
       <main className="container mx-auto px-4 py-8 flex-grow">
-        <div className="mb-4">
-          <a href="/student-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</a>
+        <div className="mb-4 flex items-center justify-between">
+          <Link to="/student-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
+          <Link to="/student-enroll" className="text-sm text-blue-600 hover:underline">Enroll in a Class</Link>
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
             <div>

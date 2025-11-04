@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Header from "../../components/Header.jsx";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
 import axios from "../../api/axiosInstance.jsx";
@@ -34,7 +35,7 @@ const TeacherCreateClass = () => {
     <div className="min-h-screen bg-slate-50">
       <Header title="Teacher Dashboard" description="Create a new class" />
       <div className="container mx-auto px-4 py-6">
-        <a href="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</a>
+        <Link to="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
         <div className="mt-4 max-w-xl">
           <Card>
             <CardHeader>

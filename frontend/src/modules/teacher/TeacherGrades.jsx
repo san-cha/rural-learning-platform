@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Header from "../../components/Header.jsx";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
@@ -39,7 +39,7 @@ const TeacherGrades = () => {
     <div className="min-h-screen bg-slate-50">
       <Header title="Teacher Dashboard" description="View Grades" />
       <div className="container mx-auto px-4 py-6">
-        <a href="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</a>
+        <Link to="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
         <div className="mt-4">
           {loading && <div>Loading...</div>}
           {error && !loading && <div className="text-red-600 text-sm">{error}</div>}

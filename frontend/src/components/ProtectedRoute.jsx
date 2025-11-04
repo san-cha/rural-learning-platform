@@ -16,7 +16,11 @@ import { useAuth } from "../contexts/AuthContext.jsx";
  * </Route>
  */
 const ProtectedRoute = ({ allowedRoles = [] }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
 
   // Not logged in
   if (!user) {
