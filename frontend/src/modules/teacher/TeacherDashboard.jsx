@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
-import Button from "../../components/ui/button";
+import Button from "../../components/ui/Button.jsx";
 import {
   Home,
   BookCopy,
@@ -43,17 +43,28 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
   const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    let isActive = true;
     const fetchClasses = async () => {
+      setLoading(true);
+      setError("");
       try {
         const res = await axios.get("/teacher/classes");
-        setClasses(res.data.classes || []);
+        if (!isActive) return;
+        setClasses(Array.isArray(res?.data?.classes) ? res.data.classes : []);
       } catch (e) {
+        if (!isActive) return;
+        setError("Failed to load classes");
         setClasses([]);
+      } finally {
+        if (isActive) setLoading(false);
       }
     };
     fetchClasses();
+    return () => { isActive = false; };
   }, []);
 
   const totals = useMemo(() => {
@@ -67,9 +78,10 @@ const TeacherDashboard = () => {
     const description = window.prompt("Enter class description (optional)") || "";
     try {
       const res = await axios.post("/teacher/classes", { name, description });
-      setClasses((prev) => [res.data.class, ...prev]);
+      const created = res?.data?.class;
+      if (created) setClasses((prev) => [created, ...prev]);
     } catch (e) {
-      // no-op
+      setError("Failed to create class");
     }
   };
 
@@ -107,8 +119,8 @@ const TeacherDashboard = () => {
         <header className="flex h-16 items-center gap-4 border-b bg-white px-6 sticky top-0 z-30">
           <h1 className="text-xl font-semibold flex-1">Dashboard</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-slate-700 hidden sm:inline">
-              Welcome, {teacherName}
+              <span className="text-sm font-medium text-slate-700 hidden sm:inline">
+              Welcome, {user?.name || "Teacher"}
             </span>
             <Button variant="outline" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4" />
@@ -168,11 +180,13 @@ const TeacherDashboard = () => {
               <CardDescription>An overview of your current classes and their progress.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {classes.map((klass) => (
+              {loading && <div>Loading...</div>}
+              {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
+              {(Array.isArray(classes) ? classes : []).map((klass) => (
                 <div key={klass._id} className="flex items-center justify-between rounded-lg border p-4">
                   <div>
-                    <p className="font-medium">{klass.name}</p>
-                    <p className="text-sm text-muted-foreground">{klass.enrolledStudents?.length || 0} Students</p>
+                    <p className="font-medium">{klass?.name || "Unnamed Class"}</p>
+                    <p className="text-sm text-muted-foreground">{klass?.enrolledStudents?.length || 0} Students</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-lg text-blue-600">0%</p>
@@ -180,6 +194,9 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
               ))}
+              {!loading && !error && Array.isArray(classes) && classes.length === 0 && (
+                <div className="text-sm text-slate-500">No classes yet.</div>
+              )}
             </CardContent>
           </Card>
 

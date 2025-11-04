@@ -8,22 +8,34 @@ import axios from "../../api/axiosInstance.jsx"
 
 const TeacherClasses = () => {
   const [klasses, setKlasses] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
+    let isActive = true
     const fetchClasses = async () => {
+      setLoading(true)
+      setError("")
       try {
         const res = await axios.get('/teacher/classes')
-        setKlasses((res.data.classes || []).map(c => ({
-          id: c._id,
-          name: c.name,
-          students: c.enrolledStudents?.length || 0,
+        if (!isActive) return
+        const list = Array.isArray(res?.data?.classes) ? res.data.classes : []
+        setKlasses(list.map(c => ({
+          id: c?._id,
+          name: c?.name || 'Unnamed Class',
+          students: c?.enrolledStudents?.length || 0,
           progress: 0
         })))
       } catch (e) {
+        if (!isActive) return
+        setError('Failed to load classes')
         setKlasses([])
+      } finally {
+        if (isActive) setLoading(false)
       }
     }
     fetchClasses()
+    return () => { isActive = false }
   }, [])
 
   const handleCreateClass = async () => {
@@ -32,10 +44,10 @@ const TeacherClasses = () => {
     const description = window.prompt('Enter class description (optional)') || ''
     try {
       const res = await axios.post('/teacher/classes', { name, description })
-      const c = res.data.class
-      setKlasses(prev => ([{ id: c._id, name: c.name, students: 0, progress: 0 }, ...prev]))
+      const c = res?.data?.class
+      if (c) setKlasses(prev => ([{ id: c._id, name: c.name || 'Unnamed Class', students: 0, progress: 0 }, ...prev]))
     } catch (e) {
-      // no-op
+      setError('Failed to create class')
     }
   }
 
@@ -57,7 +69,9 @@ const TeacherClasses = () => {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {klasses.map((klass) => (
+          {loading && <div>Loading...</div>}
+          {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
+          {(Array.isArray(klasses) ? klasses : []).map((klass) => (
             <Card key={klass.id}>
               <CardHeader>
                 <CardTitle>{klass.name}</CardTitle>
@@ -87,6 +101,9 @@ const TeacherClasses = () => {
               </CardContent>
             </Card>
           ))}
+          {!loading && !error && Array.isArray(klasses) && klasses.length === 0 && (
+            <div className="text-sm text-slate-500">No classes yet.</div>
+          )}
         </div>
       </div>
     </div>

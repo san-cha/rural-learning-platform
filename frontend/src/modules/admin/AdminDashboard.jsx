@@ -42,7 +42,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
   <div className={`p-5 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] ${color} text-white`}>
     <div className="flex items-center justify-between">
       <Icon className="w-8 h-8 opacity-75" />
-      <span className="text-3xl font-extrabold">{value.toLocaleString()}</span>
+      <span className="text-3xl font-extrabold">{(Number(value) || 0).toLocaleString()}</span>
     </div>
     <p className="mt-3 text-sm font-medium opacity-90">{title}</p>
   </div>
@@ -296,6 +296,8 @@ const TeacherManagementSection = ({ teachers, addNewTeacher }) => {
  */
 const UsersSection = ({ users, teachers, addNewTeacher }) => {
   const [activeSubTab, setActiveSubTab] = useState('learners');
+  const isUsersArray = Array.isArray(users);
+  const isTeachersArray = Array.isArray(teachers);
 
   const renderSubContent = () => {
     if (activeSubTab === 'learners') {
@@ -313,22 +315,22 @@ const UsersSection = ({ users, teachers, addNewTeacher }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
+              {(isUsersArray ? users : []).map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user?.name || 'Unknown'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div className="flex items-center">
                       <Smartphone className="w-4 h-4 mr-2 text-gray-400" />
-                      {user.device}
+                      {user?.device || '—'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.lastLogin}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.language}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user?.lastLogin || '—'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user?.language || '—'}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      user?.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                     }`}>
-                      {user.status}
+                      {user?.status || 'Inactive'}
                     </span>
                   </td>
                 </tr>
@@ -338,7 +340,7 @@ const UsersSection = ({ users, teachers, addNewTeacher }) => {
         </div>
       );
     } else {
-      return <TeacherManagementSection teachers={teachers} addNewTeacher={addNewTeacher} />;
+      return <TeacherManagementSection teachers={isTeachersArray ? teachers : []} addNewTeacher={addNewTeacher} />;
     }
   };
 
@@ -477,6 +479,8 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
 const App = () => {
   const [teachers, setTeachers] = useState([]);
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const addNewTeacher = (newTeacherData) => {
     // This UI flow remains mock; real creation should be via separate admin endpoint
@@ -484,42 +488,56 @@ const App = () => {
   };
 
   useEffect(() => {
+    let isActive = true;
     const fetchAll = async () => {
+      setLoading(true);
+      setError("");
       try {
         const [u, t] = await Promise.all([
           axios.get('/admin/users'),
           axios.get('/admin/teachers')
         ]);
-        setUsers(u.data.users || []);
-        // normalize teachers to expected shape by UsersSection
-        const normalized = (t.data.teachers || []).map((te) => ({
-          id: te._id,
-          name: te.userId?.name || 'Unknown',
+        if (!isActive) return;
+        setUsers(Array.isArray(u?.data?.users) ? u.data.users : []);
+        const normalized = (Array.isArray(t?.data?.teachers) ? t.data.teachers : []).map((te) => ({
+          id: te?._id,
+          name: te?.userId?.name || 'Unknown',
           centerCode: '',
-          assignedClasses: (te.classes?.length || 0) + ' classes',
+          assignedClasses: `${(te?.classes?.length || 0)} classes`,
           subjects: '',
           status: 'Active'
         }));
         setTeachers(normalized);
       } catch (e) {
+        if (!isActive) return;
+        setError('Failed to load admin data');
         setUsers([]);
         setTeachers([]);
+      } finally {
+        if (isActive) setLoading(false);
       }
     };
     fetchAll();
+    return () => { isActive = false; };
   }, []);
 
   const dashboardData = mockDashboardData;
   const contentData = mockContent;
 
   return (
-    <CoreDashboard
-      data={dashboardData}
-      users={users.map(u => ({ id: u._id, name: u.name, device: '', lastLogin: '', status: 'Active', language: '' }))}
-      teachers={teachers}
-      content={contentData}
-      addNewTeacher={addNewTeacher}
-    />
+    <>
+      {loading && <div className="p-4">Loading...</div>}
+      {error && !loading && <div className="p-4 text-red-600 text-sm">{error}</div>}
+      {!loading && (
+        <CoreDashboard
+          data={dashboardData}
+          users={(Array.isArray(users) ? users : []).map(u => ({ id: u?._id, name: u?.name || 'Unknown', device: '', lastLogin: '', status: 'Active', language: '' }))}
+          teachers={Array.isArray(teachers) ? teachers : []}
+          content={contentData}
+          addNewTeacher={addNewTeacher}
+        />
+      )}
+    </>
   );
 };
 

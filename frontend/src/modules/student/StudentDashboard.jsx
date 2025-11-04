@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../../components/ui/Card"; // Assuming Card components are in this path
-import Button from "../../components/ui/button"; // Assuming Button component is in this path
+import Button from "../../components/ui/Button.jsx"; // Assuming Button component is in this path
 import {
   Home,
   BookCopy,
@@ -27,21 +27,32 @@ const StudentDashboard = () => {
   const [studentName, setStudentName] = useState("");
   const [classes, setClasses] = useState([]);
   const [language, setLanguage] = useState("en");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     setStudentName(user?.name || "");
   }, [user]);
 
   useEffect(() => {
+    let isActive = true;
     const fetchClasses = async () => {
+      setLoading(true);
+      setError("");
       try {
         const res = await axios.get("/student/classes");
-        setClasses(res.data.classes || []);
+        if (!isActive) return;
+        setClasses(Array.isArray(res?.data?.classes) ? res.data.classes : []);
       } catch (e) {
+        if (!isActive) return;
+        setError("Failed to load classes");
         setClasses([]);
+      } finally {
+        if (isActive) setLoading(false);
       }
     };
     fetchClasses();
+    return () => { isActive = false; };
   }, []);
 
   const SidebarLink = ({ to, icon: Icon, children }) => (
@@ -155,8 +166,10 @@ const StudentDashboard = () => {
                 View All
               </Link>
             </div>
+            {loading && <div>Loading...</div>}
+            {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-              {classes.map((klass) => (
+              {(Array.isArray(classes) ? classes : []).map((klass) => (
                 <div
                   key={klass._id}
                   className="group relative rounded-xl border bg-white shadow-sm overflow-hidden transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
@@ -166,11 +179,11 @@ const StudentDashboard = () => {
                     <div className="w-full h-full bg-slate-200" />
                   </div>
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold text-slate-800">{klass.name}</h3>
+                    <h3 className="text-lg font-semibold text-slate-800">{klass?.name || 'Unnamed Class'}</h3>
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-2 text-sm text-slate-500">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                          <span>{klass.enrolledStudents?.length || 0} students</span>
+                          <span>{klass?.enrolledStudents?.length || 0} students</span>
                       </div>
                       <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-500">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 group-hover:text-white"><path d="m9 18 6-6-6-6"/></svg>
@@ -188,6 +201,9 @@ const StudentDashboard = () => {
                 </div>
               ))}
             </div>
+            {!loading && !error && Array.isArray(classes) && classes.length === 0 && (
+              <div className="text-sm text-slate-500">No classes enrolled yet.</div>
+            )}
           </div>
         </main>
       </div>
