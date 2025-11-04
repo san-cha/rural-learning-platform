@@ -1,19 +1,43 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx"
 import Button from "../../components/ui/Button.jsx"
 import Header from "../../components/Header.jsx"
 import { PlusCircle } from "lucide-react"
-
-// Mock Data
-const mockClasses = [
-  { id: 1, name: "Grade 6 - Science", students: 32, progress: 75 },
-  { id: 2, name: "Grade 5 - Mathematics", students: 28, progress: 40 },
-  { id: 3, name: "Grade 6 - History", students: 30, progress: 90 },
-]
+import axios from "../../api/axiosInstance.jsx"
 
 const TeacherClasses = () => {
-  const [klasses] = useState(mockClasses)
+  const [klasses, setKlasses] = useState([])
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await axios.get('/teacher/classes')
+        setKlasses((res.data.classes || []).map(c => ({
+          id: c._id,
+          name: c.name,
+          students: c.enrolledStudents?.length || 0,
+          progress: 0
+        })))
+      } catch (e) {
+        setKlasses([])
+      }
+    }
+    fetchClasses()
+  }, [])
+
+  const handleCreateClass = async () => {
+    const name = window.prompt('Enter class name')
+    if (!name) return
+    const description = window.prompt('Enter class description (optional)') || ''
+    try {
+      const res = await axios.post('/teacher/classes', { name, description })
+      const c = res.data.class
+      setKlasses(prev => ([{ id: c._id, name: c.name, students: 0, progress: 0 }, ...prev]))
+    } catch (e) {
+      // no-op
+    }
+  }
 
   return (
     <div>
@@ -24,10 +48,13 @@ const TeacherClasses = () => {
       <div className="min-h-screen bg-slate-50 p-6">
         <header className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">My Classes</h1>
-          <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+          <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700" onClick={handleCreateClass}>
             <PlusCircle className="h-4 w-4" /> Create Class
           </Button>
         </header>
+        <div className="mb-4">
+          <a href="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</a>
+        </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {klasses.map((klass) => (

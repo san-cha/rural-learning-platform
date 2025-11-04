@@ -5,6 +5,9 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js"; 
 import authRoutes from "./routes/auth.js";
+import teacherRoutes from "./routes/teacher.js";
+import studentRoutes from "./routes/student.js";
+import adminRoutes from "./routes/admin.js";
 
 dotenv.config();
 connectDB();
@@ -24,5 +27,8 @@ app.get("/", (req, res) => {
 
 // API Routes
 app.use("/auth", authRoutes);
+app.use("/teacher", teacherRoutes);
+app.use("/student", studentRoutes);
+app.use("/admin", adminRoutes);
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

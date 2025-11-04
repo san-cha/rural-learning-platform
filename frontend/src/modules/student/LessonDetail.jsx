@@ -67,7 +67,7 @@ export default function LessonDetail() {
     {/* --- Dynamic Gradient Hero --- */}
     <div className="relative bg-gradient-to-br from-blue-700 to-blue-900 text-white p-8 rounded-2xl shadow-2xl overflow-hidden mb-8">
         <div className="relative z-10">
-            <button onClick={() => navigate(-1)} className="font-semibold text-blue-200 hover:text-white transition mb-4">
+            <button onClick={() => navigate('/student-dashboard')} className="font-semibold text-blue-200 hover:text-white transition mb-4">
                 &larr; Back to Dashboard
             </button>
             <p className="font-semibold text-blue-300">{lesson.subject} • Grade {lesson.grade}</p>

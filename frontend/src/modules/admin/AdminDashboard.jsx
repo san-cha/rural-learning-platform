@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Download, Users, Globe, Zap, BookOpen, MessageSquare, Smartphone, BarChart, Settings, LogOut, PlusCircle, User, Code } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
+import axios from "../../api/axiosInstance.jsx";
 
 // --- MOCK DATA FOR DEMONSTRATION ---
 const mockDashboardData = {
@@ -21,19 +22,9 @@ const mockDashboardData = {
   communityHubLogins: 1540, // Users accessing via shared digital hubs
 };
 
-const mockUsers = [
-  { id: 1, name: 'Priya Sharma', device: 'Smartphone (Android)', lastLogin: '2 days ago', status: 'Active', language: 'Hindi' },
-  { id: 2, name: 'Rajesh Kumar', device: 'Shared Tablet', lastLogin: '1 day ago', status: 'Active', language: 'Telugu' },
-  { id: 3, name: 'Sonal Patel', device: 'Desktop (Hub)', lastLogin: '4 days ago', status: 'Inactive', language: 'Gujarati' },
-  { id: 4, name: 'Vikram Singh', device: 'Smartphone (iOS)', lastLogin: '1 hour ago', status: 'Active', language: 'English' },
-  { id: 5, name: 'Asha Reddy', device: 'Smartphone (Android)', lastLogin: '6 days ago', status: 'Active', language: 'Telugu' },
-];
+// users will be fetched from API
 
-const initialMockTeachers = [
-  { id: 'T001', name: 'Dr. Alok Verma', centerCode: 'SS-DLI-101', assignedClasses: 'Grades 8, 9', subjects: 'Science, Math', status: 'Active' },
-  { id: 'T002', name: 'Ms. Geeta Rao', centerCode: 'SS-MUM-205', assignedClasses: 'Grades 5, 6, 7', subjects: 'English, Social Science', status: 'Active' },
-  { id: 'T003', name: 'Mr. Rohan Desai', centerCode: 'SS-PUN-312', assignedClasses: 'Vocational Skills', subjects: 'Carpentry, Digital Lit.', status: 'Inactive' },
-];
+// teachers will be fetched from API
 
 const mockContent = [
   { id: 101, title: 'Basic Math (Gr 5)', languageStatus: 'All Localized', downloads: '15.2K', views: '20.1K', status: 'Live' },
@@ -433,7 +424,7 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
     <div className="min-h-screen bg-gray-100 font-sans p-4 sm:p-6 lg:p-8">
       <header className="flex justify-between items-center py-4 px-4 bg-white shadow-md rounded-xl mb-6">
         <h1 className="text-xl sm:text-2xl font-bold text-blue-700">
-          <Link to="/">Welcome Admin</Link>
+          <Link to="/admin-dashboard">Welcome Admin</Link>
         </h1>
         <div className="flex items-center space-x-4">
           <span className="text-sm font-medium text-gray-600 hidden sm:block">Admin User</span>
@@ -484,27 +475,51 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
  * Main Application Component - Now handles state for Teachers
  */
 const App = () => {
-  // State for mock teacher data
-  const [teachers, setTeachers] = useState(initialMockTeachers);
-  
-  // Function to add a new teacher to the state
+  const [teachers, setTeachers] = useState([]);
+  const [users, setUsers] = useState([]);
+
   const addNewTeacher = (newTeacherData) => {
-    setTeachers(prevTeachers => [...prevTeachers, newTeacherData]);
+    // This UI flow remains mock; real creation should be via separate admin endpoint
+    setTeachers(prev => [...prev, newTeacherData]);
   };
 
-  // Mock Data (Static)
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [u, t] = await Promise.all([
+          axios.get('/admin/users'),
+          axios.get('/admin/teachers')
+        ]);
+        setUsers(u.data.users || []);
+        // normalize teachers to expected shape by UsersSection
+        const normalized = (t.data.teachers || []).map((te) => ({
+          id: te._id,
+          name: te.userId?.name || 'Unknown',
+          centerCode: '',
+          assignedClasses: (te.classes?.length || 0) + ' classes',
+          subjects: '',
+          status: 'Active'
+        }));
+        setTeachers(normalized);
+      } catch (e) {
+        setUsers([]);
+        setTeachers([]);
+      }
+    };
+    fetchAll();
+  }, []);
+
   const dashboardData = mockDashboardData;
-  const learnerUsers = mockUsers;
   const contentData = mockContent;
 
   return (
-      <CoreDashboard
-          data={dashboardData}
-          users={learnerUsers}
-          teachers={teachers} // Pass state down
-          content={contentData}
-          addNewTeacher={addNewTeacher} // Pass update function down
-      />
+    <CoreDashboard
+      data={dashboardData}
+      users={users.map(u => ({ id: u._id, name: u.name, device: '', lastLogin: '', status: 'Active', language: '' }))}
+      teachers={teachers}
+      content={contentData}
+      addNewTeacher={addNewTeacher}
+    />
   );
 };
 

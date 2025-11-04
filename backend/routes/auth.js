@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
-import { protect } from '../middleware/authMIddleware.js'; 
+import { protect } from '../middleware/authMiddleware.js'; 
 
 const router = express.Router();
 dotenv.config();

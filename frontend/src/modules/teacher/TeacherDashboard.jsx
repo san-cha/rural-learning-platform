@@ -1,12 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/Card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
 import Button from "../../components/ui/button";
 import {
   Home,
@@ -23,18 +17,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
-// Mock Data
-const klasses = [
-  { name: "Grade 6 - Science", students: 32, progress: 75, id: 1 },
-  { name: "Grade 5 - Mathematics", students: 28, progress: 40, id: 2 },
-  { name: "Grade 6 - History", students: 30, progress: 90, id: 3 },
-];
+import axios from "../../api/axiosInstance.jsx";
 
-const content = [
-  { title: "The Solar System", type: "Audio", class: "Grade 6 - Science", date: "2024-10-02" },
-  { title: "Algebra Basics", type: "Video", class: "Grade 5 - Mathematics", date: "2024-09-28" },
-  { title: "Ancient Civilizations", type: "PDF", class: "Grade 6 - History", date: "2024-09-25" },
-];
+// Placeholder content list kept, but will later be backed by real uploads endpoint if available
+const content = [];
 
 // Helper
 const getIconForType = (type) => {
@@ -55,8 +41,37 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
 );
 
 const TeacherDashboard = () => {
-  const { logout } = useAuth();
-  const [teacherName] = useState("Samiksha");
+  const { logout, user } = useAuth();
+  const [classes, setClasses] = useState([]);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        const res = await axios.get("/teacher/classes");
+        setClasses(res.data.classes || []);
+      } catch (e) {
+        setClasses([]);
+      }
+    };
+    fetchClasses();
+  }, []);
+
+  const totals = useMemo(() => {
+    const totalStudents = classes.reduce((acc, c) => acc + (c.enrolledStudents?.length || 0), 0);
+    return { totalStudents };
+  }, [classes]);
+
+  const handleCreateClass = async () => {
+    const name = window.prompt("Enter class name");
+    if (!name) return;
+    const description = window.prompt("Enter class description (optional)") || "";
+    try {
+      const res = await axios.post("/teacher/classes", { name, description });
+      setClasses((prev) => [res.data.class, ...prev]);
+    } catch (e) {
+      // no-op
+    }
+  };
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
@@ -106,7 +121,7 @@ const TeacherDashboard = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
-              <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+              <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2" onClick={handleCreateClass}>
                 <PlusCircle className="h-4 w-4" /> Create New
               </Button>
             </div>
@@ -117,8 +132,8 @@ const TeacherDashboard = () => {
                   <Users className="h-5 w-5 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">90</div>
-                  <p className="text-xs text-muted-foreground">Across 3 active classes</p>
+                  <div className="text-3xl font-bold">{totals.totalStudents}</div>
+                  <p className="text-xs text-muted-foreground">Across {classes.length} active classes</p>
                 </CardContent>
               </Card>
 
@@ -153,14 +168,14 @@ const TeacherDashboard = () => {
               <CardDescription>An overview of your current classes and their progress.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {klasses.map((klass) => (
-                <div key={klass.id} className="flex items-center justify-between rounded-lg border p-4">
+              {classes.map((klass) => (
+                <div key={klass._id} className="flex items-center justify-between rounded-lg border p-4">
                   <div>
                     <p className="font-medium">{klass.name}</p>
-                    <p className="text-sm text-muted-foreground">{klass.students} Students</p>
+                    <p className="text-sm text-muted-foreground">{klass.enrolledStudents?.length || 0} Students</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-lg text-blue-600">{klass.progress}%</p>
+                    <p className="font-semibold text-lg text-blue-600">0%</p>
                     <p className="text-xs text-muted-foreground">Completed</p>
                   </div>
                 </div>
