@@ -96,9 +96,11 @@ const StudentDashboard = () => {
             </nav>
           </div>
           <div className="mt-auto p-4 border-t border-slate-800">
-            <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
-              <Settings className="h-4 w-4" /> Settings
-            </Button>
+            <Link to="/student-settings" className="w-full">
+              <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
+                <Settings className="h-4 w-4" /> Settings
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

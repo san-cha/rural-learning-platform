@@ -1,6 +1,7 @@
 import express from "express";
 import Teacher from "../models/Teacher.js";
 import ClassModel from "../models/Class.js";
+import Notification from "../models/Notification.js";
 import { protect, isTeacher } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -43,5 +44,27 @@ router.post("/classes", protect, isTeacher, async (req, res) => {
 });
 
 export default router;
+
+// Teacher notifications - list
+router.get("/notifications", protect, isTeacher, async (req, res) => {
+  try {
+    const notes = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 });
+    res.json({ notifications: notes });
+  } catch (e) {
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// Teacher notifications - mark read
+router.post("/notifications/:id/read", protect, isTeacher, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const note = await Notification.findOneAndUpdate({ _id: id, userId: req.user._id }, { read: true }, { new: true });
+    if (!note) return res.status(404).json({ msg: "Not found" });
+    res.json({ notification: note });
+  } catch (e) {
+    res.status(500).json({ msg: "Server error" });
+  }
+});
 
 

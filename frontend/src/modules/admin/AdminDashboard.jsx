@@ -430,6 +430,7 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
         </h1>
         <div className="flex items-center space-x-4">
           <span className="text-sm font-medium text-gray-600 hidden sm:block">Admin User</span>
+          <Link to="/admin-settings" className="text-blue-600 hover:text-blue-700">Settings</Link>
           <button
             onClick={logout}
             className="flex items-center text-red-600 hover:text-red-700 transition duration-150 p-2 rounded-lg hover:bg-red-50"
