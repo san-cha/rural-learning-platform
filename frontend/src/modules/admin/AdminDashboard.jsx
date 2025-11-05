@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "../../api/axiosInstance.jsx";
 import { CogIcon } from 'lucide-react';
+import TicketSubmissionForm from "../../components/TicketSubmissionForm.jsx";
 
 // --- MOCK DATA FOR DEMONSTRATION ---
 
@@ -336,36 +337,49 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics 
   ], [activeTab]);
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'overview':
+    switch (activeTab) {
+      case 'overview':
         return <OverviewSection metrics={metrics} data={data} />;
-      case 'content':
-        return <ContentSection content={content} />;
-      case 'users':
-        return <UsersSection users={users} teachers={teachers} addNewTeacher={addNewTeacher} />;
-      case 'support':
-        return (
-          <div className="p-6 bg-white rounded-xl shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Support & Community</h2>
-            <p className="text-xl text-blue-600 font-semibold mb-2">{data.supportTicketsOpen.toLocaleString()} Open Tickets</p>
-            <p className="text-gray-600">This section would show live support queue and track usage of community digital hubs.</p>
-            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-800 rounded-lg">
-              <p className="font-semibold">Digital Hub Logins: {data.communityHubLogins.toLocaleString()}</p>
-              <p className="text-sm">These logins often represent multiple students sharing a device, critical for tracking true reach.</p>
-            </div>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="p-6 bg-white rounded-xl shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Platform Settings</h2>
-            <p className="text-gray-600">Manage localization settings, API keys, and low-bandwidth mode configurations here.</p>
-          </div>
-        );
-      default:
-        return <OverviewSection data={data} />;
-    }
-  };
+        
+      case 'content':
+        return <ContentSection content={content} />;
+        
+      case 'users':
+        return <UsersSection users={users} teachers={teachers} addNewTeacher={addNewTeacher} />;
+        
+      case 'support': // <-- This is the ONE, merged, working case
+        return (
+            <div className="space-y-6"> 
+                
+                {/* 1. Support Metrics Display (Content from the second block, now using safe access) */}
+                <div className="p-6 bg-white rounded-xl shadow-lg">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Support & Community</h2>
+                    {/* Ensure safe access using optional chaining (data?.supportTicketsOpen) */}
+                    <p className="text-xl text-blue-600 font-semibold mb-2">
+                        {data?.supportTicketsOpen?.toLocaleString() || 0} Open Tickets
+                    </p>
+                    <p className="text-gray-600">This section shows live support queue and community login data.</p>
+                </div>
+
+                {/* 2. TICKET SUBMISSION FORM (NEW COMPONENT from the first block) */}
+                <TicketSubmissionForm 
+                    // Add a callback here later if you want the count to refresh automatically
+                />
+            </div>
+        );
+        
+      case 'settings':
+        return (
+          <div className="p-6 bg-white rounded-xl shadow-lg">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Platform Settings</h2>
+            <p className="text-gray-600">Manage localization settings, API keys, and low-bandwidth mode configurations here.</p>
+          </div>
+        );
+        
+      default:
+        return <OverviewSection data={data} />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans p-4 sm:p-6 lg:p-8">
@@ -488,8 +502,13 @@ const AdminDashboard = () => {
       color: 'bg-purple-600' 
     },
     
+    { 
+        title: 'Open Tickets', 
+        value: stats.supportTicketsOpen, // <--- Using the state property
+        icon: MessageSquare,             
+        color: 'bg-teal-600'             
+    },
     // STATIC/MOCK CARDS
-    { title: 'Offline Content Downloads', value: '41,290', icon: Download, color: 'bg-teal-600' },
     { title: 'Mobile-Only Users', value: '7,120', icon: Smartphone, color: 'bg-rose-500' },
     { title: 'Low-Bandwidth Mode', value: '5,980', icon: Zap, color: 'bg-cyan-600' },
   ];
