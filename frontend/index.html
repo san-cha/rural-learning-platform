@@ -4,10 +4,45 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>Your App</title>
+    <style>
+      /* Hide Google's default top banner */
+      .goog-te-banner-frame.skiptranslate {
+        display: none !important;
+      }
+      body {
+        top: 0px !important;
+      }
+      /* Style the dropdown */
+      #google_translate_element select {
+        background: #f1f1f1;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 5px;
+        font-size: 14px;
+      }
+    </style>
   </head>
   <body>
+    <div id="google_translate_element" 
+         style="position: fixed; top: 10px; right: 10px; z-index: 9999;"></div>
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Google Translate Widget -->
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+          pageLanguage: 'en',
+          includedLanguages: 'en,hi',
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+        }, 'google_translate_element');
+      }
+    </script>
+
+    <script type="text/javascript" 
+    src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
+    </script>
   </body>
 </html>
