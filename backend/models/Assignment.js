@@ -7,6 +7,18 @@ const AssignmentSchema = new mongoose.Schema(
     classId: { type: mongoose.Schema.Types.ObjectId, ref: "Class", required: true },
     teacherId: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher", required: true },
     contentURLs: [{ type: String }], // Array of content URLs (audio, video, PDF files)
+    assignmentType: { 
+      type: String, 
+      enum: ["file", "manual-quiz", "text-to-quiz"], 
+      default: "file" 
+    },
+    quizData: {
+      questions: [{
+        question: { type: String },
+        options: [{ type: String }],
+        correctAnswer: { type: Number }, // Index of correct option
+      }],
+    },
     submissions: [
       {
         studentId: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },

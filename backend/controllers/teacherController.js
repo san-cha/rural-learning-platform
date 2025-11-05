@@ -152,3 +152,157 @@ export const gradeSubmission = async (req, res) => {
   }
 };
 
+/**
+ * Get class details with enrolled students and assignments
+ * GET /teacher/classes/:classId
+ */
+export const getClassDetails = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const teacher = await Teacher.findOne({ userId: req.user._id });
+    
+    if (!teacher) {
+      return res.status(404).json({ msg: "Teacher profile not found" });
+    }
+
+    // Find the class and verify it belongs to this teacher
+    const klass = await ClassModel.findById(classId)
+      .populate({
+        path: "enrolledStudents",
+        populate: { path: "userId", select: "name email" },
+      });
+
+    if (!klass) {
+      return res.status(404).json({ msg: "Class not found" });
+    }
+
+    // Verify the class belongs to this teacher
+    if (klass.teacher.toString() !== teacher._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized to view this class" });
+    }
+
+    // Get all assignments for this class
+    const assignments = await Assignment.find({ classId: klass._id })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      class: {
+        _id: klass._id,
+        name: klass.name,
+        description: klass.description,
+        enrolledStudents: klass.enrolledStudents || [],
+        assignments: assignments,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching class details:", error);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
+/**
+ * Process raw text into quiz structure
+ * Basic implementation - can be enhanced with AI/ML later
+ */
+const processTextToQuiz = (text) => {
+  const questions = [];
+  // Simple implementation: split by question marks and create basic questions
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  
+  // Create a simple question from each sentence (placeholder logic)
+  sentences.slice(0, 5).forEach((sentence, index) => {
+    if (sentence.trim().length > 20) {
+      questions.push({
+        question: sentence.trim() + "?",
+        options: [
+          "True",
+          "False",
+          "Maybe",
+          "Not sure"
+        ],
+        correctAnswer: 0, // Default to first option
+      });
+    }
+  });
+
+  return questions.length > 0 ? questions : [{
+    question: "Sample question from the provided text?",
+    options: ["Option 1", "Option 2", "Option 3", "Option 4"],
+    correctAnswer: 0,
+  }];
+};
+
+/**
+ * Create a new assignment
+ * POST /teacher/classes/:classId/assignments
+ */
+export const createAssignment = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { title, description, assignmentType, quizData, rawText, dueDate } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ msg: "Assignment title is required" });
+    }
+
+    const teacher = await Teacher.findOne({ userId: req.user._id });
+    if (!teacher) {
+      return res.status(404).json({ msg: "Teacher profile not found" });
+    }
+
+    // Verify the class belongs to this teacher
+    const klass = await ClassModel.findById(classId);
+    if (!klass) {
+      return res.status(404).json({ msg: "Class not found" });
+    }
+
+    if (klass.teacher.toString() !== teacher._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized to create assignment for this class" });
+    }
+
+    // Handle file upload (if file was uploaded via multer)
+    let contentURLs = [];
+    if (req.file) {
+      // File path will be available in req.file.path
+      // In production, you'd upload to cloud storage and get a URL
+      const fileUrl = `/uploads/${req.file.filename}`;
+      contentURLs.push(fileUrl);
+    }
+
+    // Handle different assignment types
+    let assignmentData = {
+      title,
+      description: description || "",
+      classId: klass._id,
+      teacherId: teacher._id,
+      assignmentType: assignmentType || "file",
+      contentURLs,
+      dueDate: dueDate ? new Date(dueDate) : null,
+    };
+
+    if (assignmentType === "manual-quiz" && quizData) {
+      assignmentData.quizData = {
+        questions: Array.isArray(quizData.questions) ? quizData.questions : [],
+      };
+    } else if (assignmentType === "text-to-quiz" && rawText) {
+      const processedQuiz = processTextToQuiz(rawText);
+      assignmentData.quizData = {
+        questions: processedQuiz,
+      };
+    }
+
+    const newAssignment = await Assignment.create(assignmentData);
+    const populated = await Assignment.findById(newAssignment._id)
+      .populate("classId", "name")
+      .populate("teacherId", "userId");
+
+    res.status(201).json({
+      msg: "Assignment created successfully",
+      assignment: populated,
+    });
+  } catch (error) {
+    console.error("Error creating assignment:", error);
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Header from "../../components/Header.jsx";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
@@ -32,11 +31,9 @@ const TeacherCreateClass = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header title="Teacher Dashboard" description="Create a new class" />
-      <div className="container mx-auto px-4 py-6">
+    <div className="flex flex-1 flex-col gap-8 p-6 overflow-auto">
         <Link to="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
-        <div className="mt-4 max-w-xl">
+        <div className="max-w-xl">
           <Card>
             <CardHeader>
               <CardTitle>Create Class</CardTitle>
@@ -60,7 +57,6 @@ const TeacherCreateClass = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
     </div>
   );
 };

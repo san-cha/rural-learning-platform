@@ -10,9 +10,11 @@ import StudentSettings from "./modules/student/StudentSettings.jsx";
 import StudentEnroll from "./modules/student/StudentEnroll.jsx";
 import Landing from "./pages/Landing.jsx";
 import { AuthProvider } from "./contexts/AuthContext.jsx";
+import TeacherLayout from "./components/TeacherLayout.jsx";
 import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
 import TeacherClasses from "./modules/teacher/TeacherClasses.jsx";
 import TeacherCreateClass from "./modules/teacher/TeacherCreateClass.jsx";
+import TeacherClassDetail from "./modules/teacher/TeacherClassDetail.jsx";
 import TeacherGrades from "./modules/teacher/TeacherGrades.jsx";
 import TeacherNotifications from "./modules/teacher/TeacherNotifications.jsx";
 import TeacherSettings from "./modules/teacher/TeacherSettings.jsx";
@@ -47,12 +49,15 @@ function App() {
 
           {/* Teacher-protected routes */}
           <Route element={<ProtectedRoute allowedRoles={["teacher"]} />}>
-            <Route path="/teacher-dashboard/*" element={<TeacherDashboard />} />
-            <Route path="/teacher-classes" element={<TeacherClasses />} />
-            <Route path="/teacher-create-class" element={<TeacherCreateClass />} />
-            <Route path="/teacher-grades/:id" element={<TeacherGrades />} />
-            <Route path="/teacher-notifications" element={<TeacherNotifications />} />
-            <Route path="/teacher-settings" element={<TeacherSettings />} />
+            <Route element={<TeacherLayout />}>
+              <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+              <Route path="/teacher-classes" element={<TeacherClasses />} />
+              <Route path="/teacher-classes/:classId" element={<TeacherClassDetail />} />
+              <Route path="/teacher-create-class" element={<TeacherCreateClass />} />
+              <Route path="/teacher-grades/:id" element={<TeacherGrades />} />
+              <Route path="/teacher-notifications" element={<TeacherNotifications />} />
+              <Route path="/teacher-settings" element={<TeacherSettings />} />
+            </Route>
           </Route>
 
           {/* Admin pages */}

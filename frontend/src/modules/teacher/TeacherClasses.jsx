@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx"
 import Button from "../../components/ui/Button.jsx"
-import Header from "../../components/Header.jsx"
 import { PlusCircle } from "lucide-react"
 import axios from "../../api/axiosInstance.jsx"
 
 const TeacherClasses = () => {
+  const navigate = useNavigate()
   const [klasses, setKlasses] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -38,35 +38,18 @@ const TeacherClasses = () => {
     return () => { isActive = false }
   }, [])
 
-  const handleCreateClass = async () => {
-    const name = window.prompt('Enter class name')
-    if (!name) return
-    const description = window.prompt('Enter class description (optional)') || ''
-    try {
-      const res = await axios.post('/teacher/classes', { name, description })
-      const c = res?.data?.class
-      if (c) setKlasses(prev => ([{ id: c._id, name: c.name || 'Unnamed Class', students: 0, progress: 0 }, ...prev]))
-    } catch (e) {
-      setError('Failed to create class')
-    }
+  const handleCreateClass = () => {
+    navigate('/teacher-create-class')
   }
 
   return (
-    <div>
-      <Header
-        title="Teacher Dashboard"
-        description={`Welcome back, Samiksha`}
-      />
-      <div className="min-h-screen bg-slate-50 p-6">
-        <header className="flex items-center justify-between mb-6">
+    <div className="flex flex-1 flex-col gap-8 p-6 overflow-auto">
+        <header className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">My Classes</h1>
           <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700" onClick={handleCreateClass}>
             <PlusCircle className="h-4 w-4" /> Create Class
           </Button>
         </header>
-        <div className="mb-4">
-          <Link to="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
-        </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {loading && <div>Loading...</div>}
@@ -107,7 +90,6 @@ const TeacherClasses = () => {
             <div className="text-sm text-slate-500">No classes yet.</div>
           )}
         </div>
-      </div>
     </div>
   )
 }
