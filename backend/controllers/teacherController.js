@@ -176,20 +176,58 @@ export const createClass = async (req, res) => {
       teacher = await Teacher.create({ userId: req.user._id, classes: [] });
     }
 
+    // Generate unique enrollment code
+    const generateEnrollmentCode = () => {
+      // Generate 8-character alphanumeric code
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    };
+
+    // Ensure code is unique
+    let enrollmentCode;
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
+      enrollmentCode = generateEnrollmentCode();
+      const existingClass = await ClassModel.findOne({ enrollmentCode });
+      if (!existingClass) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      return res.status(500).json({ msg: "Failed to generate unique enrollment code. Please try again." });
+    }
+
     const newClass = await ClassModel.create({
       name,
       description: description || "",
       teacher: teacher._id,
       enrolledStudents: [],
+      enrollmentCode,
     });
 
     teacher.classes.push(newClass._id);
     await teacher.save();
 
     const populated = await ClassModel.findById(newClass._id).populate("teacher");
-    res.status(201).json({ class: populated });
+    res.status(201).json({ 
+      class: populated,
+      enrollmentCode: enrollmentCode // Include in response for frontend display
+    });
   } catch (error) {
     console.error("Error creating class:", error);
+    if (error.code === 11000 && error.keyPattern?.enrollmentCode) {
+      // Duplicate enrollment code error
+      return res.status(500).json({ msg: "Enrollment code conflict. Please try again." });
+    }
     res.status(500).json({ msg: "Server error" });
   }
 };
@@ -294,6 +332,7 @@ export const getClassDetails = async (req, res) => {
         _id: klass._id,
         name: klass.name,
         description: klass.description,
+        enrollmentCode: klass.enrollmentCode,
         enrolledStudents: klass.enrolledStudents || [],
         assignments: assignments,
         materials: materials,
@@ -418,33 +457,66 @@ export const createAssignment = async (req, res) => {
 export const getAssignmentDetails = async (req, res) => {
   try {
     const { assignmentId } = req.params;
+    console.log("=== getAssignmentDetails DEBUG ===");
+    console.log("Assignment ID from params:", assignmentId);
+    console.log("Authenticated user ID:", req.user._id);
+    
+    // Find the Assignment by ID (DO NOT populate yet - we need the raw classId)
+    const assignment = await Assignment.findById(assignmentId);
+    
+    if (!assignment) {
+      console.log("Assignment not found");
+      return res.status(404).json({ msg: "Assignment not found" });
+    }
+    
+    console.log("Assignment found - classId:", assignment.classId);
+    console.log("Assignment found - teacherId (raw):", assignment.teacherId);
+    
+    // Find the Class associated with this Assignment
+    const klass = await ClassModel.findById(assignment.classId);
+    
+    if (!klass) {
+      console.log("Class not found for assignment");
+      return res.status(404).json({ msg: "Class not found for this assignment" });
+    }
+    
+    console.log("Class found - teacher field:", klass.teacher);
+    
+    // Find the Teacher profile for the authenticated user
     const teacher = await Teacher.findOne({ userId: req.user._id });
     
     if (!teacher) {
+      console.log("Teacher profile not found");
       return res.status(404).json({ msg: "Teacher profile not found" });
     }
-
-    // Find the assignment
-    const assignment = await Assignment.findById(assignmentId)
-      .populate("classId", "name")
-      .populate("teacherId", "userId");
-
-    if (!assignment) {
-      return res.status(404).json({ msg: "Assignment not found" });
-    }
-
-    // Verify the assignment belongs to this teacher
-    if (assignment.teacherId.toString() !== teacher._id.toString()) {
+    
+    console.log("Teacher profile ID:", teacher._id);
+    console.log("Class teacher ID:", klass.teacher.toString());
+    console.log("Teacher profile ID:", teacher._id.toString());
+    
+    // VERIFY: Check if the authenticated teacher's ID matches the Class's 'teacher' field
+    if (klass.teacher.toString() !== teacher._id.toString()) {
+      console.log("❌ AUTHORIZATION FAILED - Teacher IDs do not match");
+      console.log("Class teacher:", klass.teacher.toString());
+      console.log("Current teacher:", teacher._id.toString());
       return res.status(403).json({ msg: "Unauthorized to view this assignment" });
     }
-
-    // Return the assignment object directly
+    
+    console.log("✅ AUTHORIZATION SUCCESS - Teacher is authorized");
+    
+    // Now populate the assignment for response (after authorization check)
+    const populatedAssignment = await Assignment.findById(assignmentId)
+      .populate("classId", "name description")
+      .populate("teacherId", "userId");
+    
+    // Return the assignment object
     res.json({ 
-      assignment,
+      assignment: populatedAssignment,
       msg: "Assignment retrieved successfully"
     });
   } catch (error) {
     console.error("Error fetching assignment details:", error);
+    console.error("Error stack:", error.stack);
     res.status(500).json({ msg: "Server error", error: error.message });
   }
 };
@@ -470,20 +542,52 @@ export const updateAssignment = async (req, res) => {
       }
     }
     
-    const teacher = await Teacher.findOne({ userId: req.user._id });
-    if (!teacher) {
-      return res.status(404).json({ msg: "Teacher profile not found" });
-    }
-
-    // First verify the assignment belongs to this teacher
+    console.log("=== updateAssignment DEBUG ===");
+    console.log("Assignment ID from params:", assignmentId);
+    console.log("Authenticated user ID:", req.user._id);
+    
+    // Find the Assignment by ID (DO NOT populate yet - we need the raw classId)
     const existingAssignment = await Assignment.findById(assignmentId);
+    
     if (!existingAssignment) {
+      console.log("Assignment not found");
       return res.status(404).json({ msg: "Assignment not found" });
     }
-
-    if (existingAssignment.teacherId.toString() !== teacher._id.toString()) {
+    
+    console.log("Assignment found - classId:", existingAssignment.classId);
+    console.log("Assignment found - teacherId (raw):", existingAssignment.teacherId);
+    
+    // Find the Class associated with this Assignment
+    const klass = await ClassModel.findById(existingAssignment.classId);
+    
+    if (!klass) {
+      console.log("Class not found for assignment");
+      return res.status(404).json({ msg: "Class not found for this assignment" });
+    }
+    
+    console.log("Class found - teacher field:", klass.teacher);
+    
+    // Find the Teacher profile for the authenticated user
+    const teacher = await Teacher.findOne({ userId: req.user._id });
+    
+    if (!teacher) {
+      console.log("Teacher profile not found");
+      return res.status(404).json({ msg: "Teacher profile not found" });
+    }
+    
+    console.log("Teacher profile ID:", teacher._id);
+    console.log("Class teacher ID:", klass.teacher.toString());
+    console.log("Teacher profile ID:", teacher._id.toString());
+    
+    // VERIFY: Check if the authenticated teacher's ID matches the Class's 'teacher' field
+    if (klass.teacher.toString() !== teacher._id.toString()) {
+      console.log("❌ AUTHORIZATION FAILED - Teacher IDs do not match");
+      console.log("Class teacher:", klass.teacher.toString());
+      console.log("Current teacher:", teacher._id.toString());
       return res.status(403).json({ msg: "Unauthorized to edit this assignment" });
     }
+    
+    console.log("✅ AUTHORIZATION SUCCESS - Teacher is authorized to edit");
 
     // Build update object
     const updateData = {
