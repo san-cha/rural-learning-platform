@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
 import axios from "../../api/axiosInstance.jsx";
-import { PlusCircle, FileText, Users, Calendar } from "lucide-react";
+import { PlusCircle, FileText, Users, Calendar, BookOpen, Upload } from "lucide-react";
+import VideoPlayer from "../../components/VideoPlayer.jsx";
 
 const TeacherClassDetail = () => {
   const { classId } = useParams();
@@ -12,6 +13,7 @@ const TeacherClassDetail = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showAssignmentForm, setShowAssignmentForm] = useState(false);
+  const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [assignmentType, setAssignmentType] = useState("file");
 
   useEffect(() => {
@@ -73,92 +75,188 @@ const TeacherClassDetail = () => {
         />
       )}
 
-      {!loading && classData && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Student Roster */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" /> Student Roster
-              </CardTitle>
-              <CardDescription>
-                {classData.enrolledStudents?.length || 0} enrolled students
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {(Array.isArray(classData.enrolledStudents) ? classData.enrolledStudents : []).map((student) => (
-                  <div key={student._id} className="flex items-center justify-between rounded-lg border p-3">
-                    <div>
-                      <p className="font-medium text-sm">
-                        {student?.userId?.name || "Unknown Student"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {student?.userId?.email || ""}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                {(!classData.enrolledStudents || classData.enrolledStudents.length === 0) && (
-                  <div className="text-sm text-slate-500 text-center py-4">
-                    No students enrolled yet.
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+      {showMaterialForm && (
+        <MaterialUploadForm
+          classId={classId}
+          onSuccess={() => {
+            setShowMaterialForm(false);
+            // Refresh class data
+            window.location.reload();
+          }}
+          onCancel={() => setShowMaterialForm(false)}
+        />
+      )}
 
-          {/* Assignments List */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" /> Assignments
-              </CardTitle>
-              <CardDescription>
-                {classData.assignments?.length || 0} assignments created
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {(Array.isArray(classData.assignments) ? classData.assignments : []).map((assignment) => (
-                  <div
-                    key={assignment._id}
-                    className="flex items-center justify-between rounded-lg border p-4 cursor-pointer hover:bg-slate-50 transition-colors"
-                    onClick={() => navigate(`/teacher-grades/${assignment._id}`)}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium">{assignment.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {assignment.description || "No description"}
-                      </p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <FileText className="h-3 w-3" />
-                          {assignment.submissions?.length || 0} submissions
-                        </span>
-                        {assignment.dueDate && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                          </span>
-                        )}
+      {!loading && classData && (
+        <div className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Student Roster */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" /> Student Roster
+                </CardTitle>
+                <CardDescription>
+                  {classData.enrolledStudents?.length || 0} enrolled students
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {(Array.isArray(classData.enrolledStudents) ? classData.enrolledStudents : []).map((student) => (
+                    <div key={student._id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <p className="font-medium text-sm">
+                          {student?.userId?.name || "Unknown Student"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {student?.userId?.email || ""}
+                        </p>
                       </div>
                     </div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/teacher-grades/${assignment._id}`);
-                      }}
+                  ))}
+                  {(!classData.enrolledStudents || classData.enrolledStudents.length === 0) && (
+                    <div className="text-sm text-slate-500 text-center py-4">
+                      No students enrolled yet.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Assignments List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" /> Assignments
+                </CardTitle>
+                <CardDescription>
+                  {classData.assignments?.length || 0} assignments created
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {(Array.isArray(classData.assignments) ? classData.assignments : []).map((assignment) => (
+                    <div
+                      key={assignment._id}
+                      className="flex items-center justify-between rounded-lg border p-4 cursor-pointer hover:bg-slate-50 transition-colors"
                     >
-                      Grade
-                    </Button>
+                      <div className="flex-1">
+                        <p className="font-medium">{assignment.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {assignment.description || "No description"}
+                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <FileText className="h-3 w-3" />
+                            {assignment.submissions?.length || 0} submissions
+                          </span>
+                          {assignment.dueDate && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Due: {new Date(assignment.dueDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/teacher-assignments/${assignment._id}`);
+                        }}
+                      >
+                        View/Edit
+                      </Button>
+                    </div>
+                  ))}
+                  {(!classData.assignments || classData.assignments.length === 0) && (
+                    <div className="text-sm text-slate-500 text-center py-4">
+                      No assignments yet. Create one to get started!
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Study Materials Section */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5" /> Study Materials
+                  </CardTitle>
+                  <CardDescription>
+                    {classData.materials?.length || 0} materials uploaded
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() => setShowMaterialForm(!showMaterialForm)}
+                >
+                  <Upload className="h-4 w-4" /> Upload Material
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {(Array.isArray(classData.materials) ? classData.materials : []).map((material) => (
+                  <div
+                    key={material._id}
+                    className="rounded-lg border p-4 hover:bg-slate-50 transition-colors"
+                  >
+                    {material.type === "video" ? (
+                      // Video Player Display
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-medium text-sm">{material.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Uploaded by {material.uploadedBy?.name || "Unknown"} • {new Date(material.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <VideoPlayer filePath={material.filePath} />
+                      </div>
+                    ) : (
+                      // PDF/Image Display (existing layout)
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`p-2 rounded-lg ${
+                            material.type === "pdf" ? "bg-red-100" :
+                            "bg-blue-100"
+                          }`}>
+                            <FileText className={`h-4 w-4 ${
+                              material.type === "pdf" ? "text-red-600" :
+                              "text-blue-600"
+                            }`} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{material.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {material.type.toUpperCase()} • Uploaded by {material.uploadedBy?.name || "Unknown"} • {new Date(material.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={`${import.meta.env.VITE_BACKEND_URL || "http://localhost:5000"}${material.filePath}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-sm"
+                        >
+                          View
+                        </a>
+                      </div>
+                    )}
                   </div>
                 ))}
-                {(!classData.assignments || classData.assignments.length === 0) && (
+                {(!classData.materials || classData.materials.length === 0) && (
                   <div className="text-sm text-slate-500 text-center py-4">
-                    No assignments yet. Create one to get started!
+                    No study materials uploaded yet.
                   </div>
                 )}
               </div>
@@ -405,6 +503,121 @@ const AssignmentCreationForm = ({ classId, assignmentType, setAssignmentType, on
           <div className="flex gap-2">
             <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
               {loading ? "Creating..." : "Create Assignment"}
+            </Button>
+            <Button type="button" variant="secondary" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Material Upload Form Component
+const MaterialUploadForm = ({ classId, onSuccess, onCancel }) => {
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState("pdf");
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    if (!file) {
+      setError("Please select a file to upload");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("type", type);
+      formData.append("file", file);
+
+      const res = await axios.post(`/teacher/classes/${classId}/materials`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res?.data?.material) {
+        onSuccess();
+      }
+    } catch (e) {
+      setError(e?.response?.data?.msg || "Failed to upload material");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAcceptTypes = () => {
+    if (type === "pdf") return "application/pdf";
+    if (type === "image") return "image/*";
+    if (type === "video") return "video/*";
+    return "*/*";
+  };
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle>Upload Study Material</CardTitle>
+        <CardDescription>Upload PDF, Image, or Video files for your students</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Title *</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="w-full border rounded-md px-3 py-2"
+              placeholder="Material title"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Type *</label>
+            <select
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value);
+                setFile(null); // Reset file when type changes
+              }}
+              required
+              className="w-full border rounded-md px-3 py-2"
+            >
+              <option value="pdf">PDF</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Upload File *</label>
+            <input
+              type="file"
+              accept={getAcceptTypes()}
+              onChange={(e) => setFile(e.target.files[0])}
+              required
+              className="w-full border rounded-md px-3 py-2"
+            />
+            {file && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Selected: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+              </p>
+            )}
+          </div>
+
+          {error && <div className="text-sm text-red-600">{error}</div>}
+
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+              {loading ? "Uploading..." : "Upload Material"}
             </Button>
             <Button type="button" variant="secondary" onClick={onCancel}>
               Cancel

@@ -15,6 +15,7 @@ import TeacherDashboard from "./modules/teacher/TeacherDashboard.jsx";
 import TeacherClasses from "./modules/teacher/TeacherClasses.jsx";
 import TeacherCreateClass from "./modules/teacher/TeacherCreateClass.jsx";
 import TeacherClassDetail from "./modules/teacher/TeacherClassDetail.jsx";
+import TeacherAssignmentEdit from "./modules/teacher/TeacherAssignmentEdit.jsx";
 import TeacherGrades from "./modules/teacher/TeacherGrades.jsx";
 import TeacherNotifications from "./modules/teacher/TeacherNotifications.jsx";
 import TeacherSettings from "./modules/teacher/TeacherSettings.jsx";
@@ -54,6 +55,7 @@ function App() {
               <Route path="/teacher-classes" element={<TeacherClasses />} />
               <Route path="/teacher-classes/:classId" element={<TeacherClassDetail />} />
               <Route path="/teacher-create-class" element={<TeacherCreateClass />} />
+              <Route path="/teacher-assignments/:assignmentId" element={<TeacherAssignmentEdit />} />
               <Route path="/teacher-grades/:id" element={<TeacherGrades />} />
               <Route path="/teacher-notifications" element={<TeacherNotifications />} />
               <Route path="/teacher-settings" element={<TeacherSettings />} />

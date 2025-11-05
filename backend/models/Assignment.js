@@ -30,6 +30,7 @@ const AssignmentSchema = new mongoose.Schema(
       },
     ],
     dueDate: { type: Date },
+    lastEdited: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

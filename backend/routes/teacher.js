@@ -6,7 +6,17 @@ import Teacher from "../models/Teacher.js";
 import ClassModel from "../models/Class.js";
 import Notification from "../models/Notification.js";
 import { protect, isTeacher } from "../middleware/authMiddleware.js";
-import { getDashboardOverview, createClass, gradeSubmission, getClassDetails, createAssignment } from "../controllers/teacherController.js";
+import { 
+  getDashboardOverview, 
+  createClass, 
+  gradeSubmission, 
+  getClassDetails, 
+  createAssignment,
+  getAssignmentDetails,
+  updateAssignment,
+  uploadMaterial,
+  getClassMaterials
+} from "../controllers/teacherController.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,15 +33,19 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // Allow images and PDFs
-  if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") {
+  // Allow images, PDFs, and videos
+  if (
+    file.mimetype.startsWith("image/") || 
+    file.mimetype === "application/pdf" ||
+    file.mimetype.startsWith("video/")
+  ) {
     cb(null, true);
   } else {
-    cb(new Error("Only images and PDF files are allowed"), false);
+    cb(new Error("Only images, PDF, and video files are allowed"), false);
   }
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB limit
+const upload = multer({ storage, fileFilter, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB limit for videos
 
 const router = express.Router();
 
@@ -60,6 +74,18 @@ router.post("/classes", protect, isTeacher, createClass);
 
 // Create assignment for a class
 router.post("/classes/:classId/assignments", protect, isTeacher, upload.single("file"), createAssignment);
+
+// Get assignment details
+router.get("/assignments/:assignmentId", protect, isTeacher, getAssignmentDetails);
+
+// Update assignment
+router.put("/assignments/:assignmentId", protect, isTeacher, upload.single("file"), updateAssignment);
+
+// Upload study material
+router.post("/classes/:classId/materials", protect, isTeacher, upload.single("file"), uploadMaterial);
+
+// Get all materials for a class
+router.get("/classes/:classId/materials", protect, isTeacher, getClassMaterials);
 
 // Grade a submission
 router.put("/submission/:submissionId/grade", protect, isTeacher, gradeSubmission);
