@@ -1,6 +1,37 @@
 import express from 'express';
 const router = express.Router();
-import Ticket from '../models/Ticket.js'; // Make sure this path is correct
+// NOTE: Please ensure these paths are 100% correct relative to your routes/tickets.js file
+import Ticket from '../models/Ticket.js'; 
+import { protect } from '../middleware/authMiddleware.js';
+
+// --- CREATE (POST) ---
+// @route   POST /api/tickets/submit  
+router.post('/submit', protect, async (req, res) => {
+  try {
+    // We no longer need 'submittedBy' from the body; we get it from the token
+    const { description, priority, title } = req.body; 
+
+    // --- Validation Check ---
+    if (!description || !title) {
+        return res.status(400).json({ msg: "Please include a title and description for the ticket." });
+    }
+    
+    const newTicket = new Ticket({
+      submittedBy: req.user._id, // <--- CRITICAL: Get User ID from JWT token
+      title, 
+      description,
+      priority: priority || 'Medium', 
+      status: 'Open' // <--- CORRECTED: Now uses capitalized 'Open' to match Mongoose enum
+    });
+
+    const savedTicket = await newTicket.save();
+    res.status(201).json(savedTicket);
+  } catch (err) {
+    console.error(`Mongoose Error during Ticket creation: ${err.message}`);
+    // If the error is still a validation error, it will show up here
+    res.status(500).send('Server Error');
+  }
+});
 
 // --- READ (GET All) ---
 // @route   GET /api/tickets/
@@ -11,26 +42,6 @@ router.get('/', async (req, res) => {
       .sort({ createdAt: -1 });
 
     res.json(tickets);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-// --- CREATE (POST) ---
-// @route   POST /api/tickets/create
-router.post('/create', async (req, res) => {
-  try {
-    const { submittedBy, description, priority } = req.body;
-
-    const newTicket = new Ticket({
-      submittedBy,
-      description,
-      priority
-    });
-
-    const savedTicket = await newTicket.save();
-    res.status(201).json(savedTicket);
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server Error');
