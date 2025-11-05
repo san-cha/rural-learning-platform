@@ -3,12 +3,17 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 import connectDB from "./config/db.js"; 
 import authRoutes from "./routes/auth.js";
 import teacherRoutes from "./routes/teacher.js";
 import studentRoutes from "./routes/student.js";
 import adminRoutes from "./routes/admin.js";
 import ticketRoutes from './routes/tickets.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 connectDB();
@@ -46,6 +51,12 @@ app.use(express.json()); // Parses JSON bodies
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieParser());
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/", (req, res) => {
   res.send("API is running...");

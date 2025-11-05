@@ -1,128 +1,77 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
 import Button from "../../components/ui/Button.jsx";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
-  Home,
-  BookCopy,
   Users,
-  Bell,
-  Settings,
   PlusCircle,
   FileText,
   CheckSquare,
-  Video,
-  FileAudio,
-  LogOut,
 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
 
 import axios from "../../api/axiosInstance.jsx";
 
-// Placeholder content list kept, but will later be backed by real uploads endpoint if available
-const content = [];
-
-// Helper
-const getIconForType = (type) => {
-  if (type === "Audio") return <FileAudio className="h-5 w-5 text-orange-500" />;
-  if (type === "Video") return <Video className="h-5 w-5 text-purple-500" />;
-  return <FileText className="h-5 w-5 text-blue-500" />;
-};
-
-// Sidebar link component
-const SidebarLink = ({ to, icon: Icon, children }) => (
-  <Link
-    to={to}
-    className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 transition-all hover:text-white hover:bg-slate-700/50"
-  >
-    <Icon className="h-5 w-5" />
-    {children}
-  </Link>
-);
 
 const TeacherDashboard = () => {
-  const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [dashboardData, setDashboardData] = useState({
+    totalStudentsCount: 0,
+    assignmentsToGradeCount: 0,
+    uploadedContentCount: 0,
+    activeClasses: [],
+    recentContent: [],
+  });
 
+  // Fetch dashboard data
   useEffect(() => {
     let isActive = true;
-    const fetchClasses = async () => {
+    const fetchDashboard = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await axios.get("/teacher/classes");
+        const res = await axios.get("/teacher/dashboard-data");
         if (!isActive) return;
-        setClasses(Array.isArray(res?.data?.classes) ? res.data.classes : []);
+        setDashboardData({
+          totalStudentsCount: res?.data?.totalStudentsCount || 0,
+          assignmentsToGradeCount: res?.data?.assignmentsToGradeCount || 0,
+          uploadedContentCount: res?.data?.uploadedContentCount || 0,
+          activeClasses: Array.isArray(res?.data?.activeClasses) ? res.data.activeClasses : [],
+          recentContent: Array.isArray(res?.data?.recentContent) ? res.data.recentContent : [],
+        });
       } catch (e) {
         if (!isActive) return;
-        setError("Failed to load classes");
-        setClasses([]);
+        setError("Failed to load dashboard data");
+        setDashboardData({
+          totalStudentsCount: 0,
+          assignmentsToGradeCount: 0,
+          uploadedContentCount: 0,
+          activeClasses: [],
+          recentContent: [],
+        });
       } finally {
         if (isActive) setLoading(false);
       }
     };
-    fetchClasses();
+    fetchDashboard();
     return () => { isActive = false; };
   }, []);
-
-  const totals = useMemo(() => {
-    const totalStudents = classes.reduce((acc, c) => acc + (c.enrolledStudents?.length || 0), 0);
-    return { totalStudents };
-  }, [classes]);
 
   const handleCreateClass = () => {
     navigate('/teacher-create-class');
   };
 
+  const handleCardClick = (route) => {
+    navigate(route);
+  };
+
+  const handleClassClick = (classId) => {
+    navigate(`/teacher-classes/${classId}`);
+  };
+
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
-      {/* SIDEBAR */}
-      <div className="hidden border-r bg-blue-900 text-white md:block">
-        <div className="flex h-full flex-col gap-2">
-          <div className="flex h-16 items-center border-b border-slate-800 px-6">
-            <Link to="/teacher-dashboard" className="flex items-center gap-2 font-semibold">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500">
-                <BookCopy className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg">SarvaShiksha</span>
-            </Link>
-          </div>
-          <div className="flex-1 py-4">
-            <nav className="grid items-start px-4 text-sm font-medium">
-              <SidebarLink to="/teacher-dashboard" icon={Home}>Dashboard</SidebarLink>
-              <SidebarLink to="/teacher-classes" icon={Users}>My Classes</SidebarLink>
-              <SidebarLink to="/teacher-notifications" icon={Bell}>Notifications</SidebarLink>
-            </nav>
-          </div>
-          <div className="mt-auto p-4 border-t border-slate-800">
-            <Link to="/teacher-settings" className="w-full">
-              <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
-                <Settings className="h-4 w-4" /> Settings
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT */}
-      <div className="flex flex-col bg-slate-50">
-        {/* Header */}
-        <header className="flex h-16 items-center gap-4 border-b bg-white px-6 sticky top-0 z-30">
-          <h1 className="text-xl font-semibold flex-1">Dashboard</h1>
-          <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-slate-700 hidden sm:inline">
-              Welcome, {user?.name || "Teacher"}
-            </span>
-            <Button variant="outline" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
-        </header>
-
-        <main className="flex flex-1 flex-col gap-8 p-6 overflow-auto">
+    <div className="flex flex-1 flex-col gap-8 p-6 overflow-auto">
           {/* Overview Cards */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -132,36 +81,45 @@ const TeacherDashboard = () => {
               </Button>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
+              <Card 
+                className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+                onClick={() => handleCardClick('/teacher-classes')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Students</CardTitle>
                   <Users className="h-5 w-5 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{totals.totalStudents}</div>
-                  <p className="text-xs text-muted-foreground">Across {classes.length} active classes</p>
+                  <div className="text-3xl font-bold">{dashboardData.totalStudentsCount}</div>
+                  <p className="text-xs text-muted-foreground">Across {dashboardData.activeClasses.length} active classes</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card 
+                className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+                onClick={() => handleCardClick('/teacher-grades/assignments-to-grade')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Assignments to Grade</CardTitle>
                   <CheckSquare className="h-5 w-5 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">For 'Algebra Worksheet'</p>
+                  <div className="text-3xl font-bold">{dashboardData.assignmentsToGradeCount}</div>
+                  <p className="text-xs text-muted-foreground">Pending submissions</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card 
+                className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+                onClick={() => handleCardClick('/teacher-classes')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Uploaded Content</CardTitle>
                   <FileText className="h-5 w-5 text-cyan-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">27</div>
-                  <p className="text-xs text-muted-foreground">12 Audio, 8 Videos, 7 PDFs</p>
+                  <div className="text-3xl font-bold">{dashboardData.uploadedContentCount}</div>
+                  <p className="text-xs text-muted-foreground">Total assignments and materials</p>
                 </CardContent>
               </Card>
             </div>
@@ -176,11 +134,15 @@ const TeacherDashboard = () => {
             <CardContent className="space-y-4">
               {loading && <div>Loading...</div>}
               {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
-              {(Array.isArray(classes) ? classes : []).map((klass) => (
-                <div key={klass._id} className="flex items-center justify-between rounded-lg border p-4">
+              {(Array.isArray(dashboardData.activeClasses) ? dashboardData.activeClasses : []).map((klass) => (
+                <div 
+                  key={klass._id} 
+                  className="flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:bg-slate-50"
+                  onClick={() => handleClassClick(klass._id)}
+                >
                   <div>
                     <p className="font-medium">{klass?.name || "Unnamed Class"}</p>
-                    <p className="text-sm text-muted-foreground">{klass?.enrolledStudents?.length || 0} Students</p>
+                    <p className="text-sm text-muted-foreground">{klass?.studentCount || 0} Students</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-lg text-blue-600">0%</p>
@@ -188,7 +150,7 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
               ))}
-              {!loading && !error && Array.isArray(classes) && classes.length === 0 && (
+              {!loading && !error && Array.isArray(dashboardData.activeClasses) && dashboardData.activeClasses.length === 0 && (
                 <div className="text-sm text-slate-500">No classes yet.</div>
               )}
             </CardContent>
@@ -201,20 +163,42 @@ const TeacherDashboard = () => {
               <CardDescription>A list of lessons and materials you've recently uploaded.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {content.map((item) => (
-                <div key={item.title} className="flex items-center gap-4 rounded-lg border p-4">
-                  <div className="flex-shrink-0">{getIconForType(item.type)}</div>
+              {loading && <div>Loading...</div>}
+              {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
+              {(Array.isArray(dashboardData.recentContent) ? dashboardData.recentContent : []).map((item) => (
+                <div 
+                  key={item._id} 
+                  className="flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => {
+                    if (item.type === "Assignment") {
+                      navigate(`/teacher-assignments/${item._id}`);
+                    } else if (item.type === "Material") {
+                      // Navigate to class detail page with materials section
+                      navigate(`/teacher-classes/${item.classId}`);
+                    }
+                  }}
+                >
+                  <div className="flex-shrink-0">
+                    {item.type === "Assignment" ? (
+                      <FileText className="h-5 w-5 text-blue-500" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-green-500" />
+                    )}
+                  </div>
                   <div className="flex-grow">
                     <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.class}</p>
+                    <p className="text-sm text-muted-foreground">{item.type}</p>
                   </div>
-                  <div className="text-right text-sm text-muted-foreground">{item.date}</div>
+                  <div className="text-right text-sm text-muted-foreground">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
+                  </div>
                 </div>
               ))}
+              {!loading && !error && Array.isArray(dashboardData.recentContent) && dashboardData.recentContent.length === 0 && (
+                <div className="text-sm text-slate-500 text-center py-4">No recent content yet.</div>
+              )}
             </CardContent>
           </Card>
-        </main>
-      </div>
     </div>
   );
 };
