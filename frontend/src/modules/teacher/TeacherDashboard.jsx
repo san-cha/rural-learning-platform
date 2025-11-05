@@ -1,13 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/Card";
-import Button from "../../components/ui/button";
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
+import Button from "../../components/ui/Button.jsx";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Home,
   BookCopy,
@@ -23,18 +17,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
-// Mock Data
-const klasses = [
-  { name: "Grade 6 - Science", students: 32, progress: 75, id: 1 },
-  { name: "Grade 5 - Mathematics", students: 28, progress: 40, id: 2 },
-  { name: "Grade 6 - History", students: 30, progress: 90, id: 3 },
-];
+import axios from "../../api/axiosInstance.jsx";
 
-const content = [
-  { title: "The Solar System", type: "Audio", class: "Grade 6 - Science", date: "2024-10-02" },
-  { title: "Algebra Basics", type: "Video", class: "Grade 5 - Mathematics", date: "2024-09-28" },
-  { title: "Ancient Civilizations", type: "PDF", class: "Grade 6 - History", date: "2024-09-25" },
-];
+// Placeholder content list kept, but will later be backed by real uploads endpoint if available
+const content = [];
 
 // Helper
 const getIconForType = (type) => {
@@ -55,8 +41,41 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
 );
 
 const TeacherDashboard = () => {
-  const { logout } = useAuth();
-  const [teacherName] = useState("Samiksha");
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+    const fetchClasses = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await axios.get("/teacher/classes");
+        if (!isActive) return;
+        setClasses(Array.isArray(res?.data?.classes) ? res.data.classes : []);
+      } catch (e) {
+        if (!isActive) return;
+        setError("Failed to load classes");
+        setClasses([]);
+      } finally {
+        if (isActive) setLoading(false);
+      }
+    };
+    fetchClasses();
+    return () => { isActive = false; };
+  }, []);
+
+  const totals = useMemo(() => {
+    const totalStudents = classes.reduce((acc, c) => acc + (c.enrolledStudents?.length || 0), 0);
+    return { totalStudents };
+  }, [classes]);
+
+  const handleCreateClass = () => {
+    navigate('/teacher-create-class');
+  };
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
@@ -64,7 +83,7 @@ const TeacherDashboard = () => {
       <div className="hidden border-r bg-blue-900 text-white md:block">
         <div className="flex h-full flex-col gap-2">
           <div className="flex h-16 items-center border-b border-slate-800 px-6">
-            <Link to="/" className="flex items-center gap-2 font-semibold">
+            <Link to="/teacher-dashboard" className="flex items-center gap-2 font-semibold">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500">
                 <BookCopy className="h-5 w-5 text-white" />
               </div>
@@ -79,9 +98,11 @@ const TeacherDashboard = () => {
             </nav>
           </div>
           <div className="mt-auto p-4 border-t border-slate-800">
-            <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
-              <Settings className="h-4 w-4" /> Settings
-            </Button>
+            <Link to="/teacher-settings" className="w-full">
+              <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
+                <Settings className="h-4 w-4" /> Settings
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -92,8 +113,8 @@ const TeacherDashboard = () => {
         <header className="flex h-16 items-center gap-4 border-b bg-white px-6 sticky top-0 z-30">
           <h1 className="text-xl font-semibold flex-1">Dashboard</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-slate-700 hidden sm:inline">
-              Welcome, {teacherName}
+              <span className="text-sm font-medium text-slate-700 hidden sm:inline">
+              Welcome, {user?.name || "Teacher"}
             </span>
             <Button variant="outline" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4" />
@@ -106,7 +127,7 @@ const TeacherDashboard = () => {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
-              <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+              <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2" onClick={handleCreateClass}>
                 <PlusCircle className="h-4 w-4" /> Create New
               </Button>
             </div>
@@ -117,8 +138,8 @@ const TeacherDashboard = () => {
                   <Users className="h-5 w-5 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">90</div>
-                  <p className="text-xs text-muted-foreground">Across 3 active classes</p>
+                  <div className="text-3xl font-bold">{totals.totalStudents}</div>
+                  <p className="text-xs text-muted-foreground">Across {classes.length} active classes</p>
                 </CardContent>
               </Card>
 
@@ -153,18 +174,23 @@ const TeacherDashboard = () => {
               <CardDescription>An overview of your current classes and their progress.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {klasses.map((klass) => (
-                <div key={klass.id} className="flex items-center justify-between rounded-lg border p-4">
+              {loading && <div>Loading...</div>}
+              {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
+              {(Array.isArray(classes) ? classes : []).map((klass) => (
+                <div key={klass._id} className="flex items-center justify-between rounded-lg border p-4">
                   <div>
-                    <p className="font-medium">{klass.name}</p>
-                    <p className="text-sm text-muted-foreground">{klass.students} Students</p>
+                    <p className="font-medium">{klass?.name || "Unnamed Class"}</p>
+                    <p className="text-sm text-muted-foreground">{klass?.enrolledStudents?.length || 0} Students</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-lg text-blue-600">{klass.progress}%</p>
+                    <p className="font-semibold text-lg text-blue-600">0%</p>
                     <p className="text-xs text-muted-foreground">Completed</p>
                   </div>
                 </div>
               ))}
+              {!loading && !error && Array.isArray(classes) && classes.length === 0 && (
+                <div className="text-sm text-slate-500">No classes yet.</div>
+              )}
             </CardContent>
           </Card>
 

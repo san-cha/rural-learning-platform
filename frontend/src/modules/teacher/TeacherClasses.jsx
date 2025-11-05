@@ -1,19 +1,55 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx"
 import Button from "../../components/ui/Button.jsx"
 import Header from "../../components/Header.jsx"
 import { PlusCircle } from "lucide-react"
-
-// Mock Data
-const mockClasses = [
-  { id: 1, name: "Grade 6 - Science", students: 32, progress: 75 },
-  { id: 2, name: "Grade 5 - Mathematics", students: 28, progress: 40 },
-  { id: 3, name: "Grade 6 - History", students: 30, progress: 90 },
-]
+import axios from "../../api/axiosInstance.jsx"
 
 const TeacherClasses = () => {
-  const [klasses] = useState(mockClasses)
+  const [klasses, setKlasses] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    let isActive = true
+    const fetchClasses = async () => {
+      setLoading(true)
+      setError("")
+      try {
+        const res = await axios.get('/teacher/classes')
+        if (!isActive) return
+        const list = Array.isArray(res?.data?.classes) ? res.data.classes : []
+        setKlasses(list.map(c => ({
+          id: c?._id,
+          name: c?.name || 'Unnamed Class',
+          students: c?.enrolledStudents?.length || 0,
+          progress: 0
+        })))
+      } catch (e) {
+        if (!isActive) return
+        setError('Failed to load classes')
+        setKlasses([])
+      } finally {
+        if (isActive) setLoading(false)
+      }
+    }
+    fetchClasses()
+    return () => { isActive = false }
+  }, [])
+
+  const handleCreateClass = async () => {
+    const name = window.prompt('Enter class name')
+    if (!name) return
+    const description = window.prompt('Enter class description (optional)') || ''
+    try {
+      const res = await axios.post('/teacher/classes', { name, description })
+      const c = res?.data?.class
+      if (c) setKlasses(prev => ([{ id: c._id, name: c.name || 'Unnamed Class', students: 0, progress: 0 }, ...prev]))
+    } catch (e) {
+      setError('Failed to create class')
+    }
+  }
 
   return (
     <div>
@@ -24,13 +60,18 @@ const TeacherClasses = () => {
       <div className="min-h-screen bg-slate-50 p-6">
         <header className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">My Classes</h1>
-          <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+          <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700" onClick={handleCreateClass}>
             <PlusCircle className="h-4 w-4" /> Create Class
           </Button>
         </header>
+        <div className="mb-4">
+          <Link to="/teacher-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
+        </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {klasses.map((klass) => (
+          {loading && <div>Loading...</div>}
+          {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
+          {(Array.isArray(klasses) ? klasses : []).map((klass) => (
             <Card key={klass.id}>
               <CardHeader>
                 <CardTitle>{klass.name}</CardTitle>
@@ -53,13 +94,18 @@ const TeacherClasses = () => {
                       View Class
                     </Button>
                   </Link>
-                  <Button className="text-sm bg-blue-500 text-blue-800 hover:bg-blue-100">
-                    Grade Assignments
-                  </Button>
+                  <Link to={`/teacher-grades/${klass.id}`}>
+                    <Button className="text-sm bg-blue-500 text-blue-800 hover:bg-blue-100">
+                      Grade Assignments
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
           ))}
+          {!loading && !error && Array.isArray(klasses) && klasses.length === 0 && (
+            <div className="text-sm text-slate-500">No classes yet.</div>
+          )}
         </div>
       </div>
     </div>

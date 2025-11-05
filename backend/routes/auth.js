@@ -2,8 +2,11 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import Teacher from "../models/Teacher.js";
+import Student from "../models/Student.js";
+import ClassModel from "../models/Class.js";
 import dotenv from "dotenv";
-import { protect } from '../middleware/authMIddleware.js'; 
+import { protect } from '../middleware/authMiddleware.js'; 
 
 const router = express.Router();
 dotenv.config();
@@ -103,6 +106,39 @@ router.get("/me", protect, (req, res) => {
 router.post("/logout", (req, res) => {
   res.clearCookie("token", COOKIE_OPTIONS);
   res.json({ msg: "Logged out successfully" });
+});
+
+// Delete current user account and related records
+router.delete("/delete-account", protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    if (user.role === 'teacher') {
+      const teacher = await Teacher.findOne({ userId: user._id });
+      if (teacher) {
+        // Delete classes owned by teacher
+        await ClassModel.deleteMany({ teacher: teacher._id });
+        await Teacher.deleteOne({ _id: teacher._id });
+      }
+    } else if (user.role === 'student') {
+      const student = await Student.findOne({ userId: user._id });
+      if (student) {
+        // Remove student from enrolledStudents of classes
+        await ClassModel.updateMany(
+          { enrolledStudents: student._id },
+          { $pull: { enrolledStudents: student._id } }
+        );
+        await Student.deleteOne({ _id: student._id });
+      }
+    }
+
+    await User.deleteOne({ _id: user._id });
+    res.clearCookie("token", COOKIE_OPTIONS);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
 export default router;

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { studentNotifications as initialNotifications } from '../../data/notificationData.js';
 import Header from '../../components/Header.jsx';
 import Footer from '../../components/Footer.jsx';
@@ -58,6 +58,9 @@ export default function StudentNotifications() {
       <Header user={{ name: "Sanjana Chavan" }} />
       <main className="container mx-auto px-4 py-8 flex-grow">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-4">
+            <Link to="/student-dashboard" className="text-sm text-blue-600 hover:underline">&larr; Back to Dashboard</Link>
+          </div>
           {/* Header Section */}
           <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-8">
             <div>

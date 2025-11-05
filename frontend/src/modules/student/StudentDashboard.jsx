@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { lessons } from "../../data/courseData";
 import {
   Card,
   CardContent,
@@ -8,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../../components/ui/Card"; // Assuming Card components are in this path
-import Button from "../../components/ui/button"; // Assuming Button component is in this path
+import Button from "../../components/ui/Button.jsx"; // Assuming Button component is in this path
 import {
   Home,
   BookCopy,
@@ -20,18 +19,43 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import axios from "../../api/axiosInstance.jsx";
 
-// MOCK DATA
-const student = {
-  name: "Sanjana Chavan",
-  completedLessons: 12,
-  totalLessons: 20,
-  weeklyProgress: 75,
-};
+const StudentDashboard = () => {
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const [studentName, setStudentName] = useState("");
+  const [classes, setClasses] = useState([]);
+  const [language, setLanguage] = useState("en");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
+  useEffect(() => {
+    setStudentName(user?.name || "");
+  }, [user]);
 
-// Reusable SidebarLink component
-const SidebarLink = ({ to, icon: Icon, children }) => (
+  useEffect(() => {
+    let isActive = true;
+    const fetchClasses = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await axios.get("/student/classes");
+        if (!isActive) return;
+        setClasses(Array.isArray(res?.data?.classes) ? res.data.classes : []);
+      } catch (e) {
+        if (!isActive) return;
+        setError("Failed to load classes");
+        setClasses([]);
+      } finally {
+        if (isActive) setLoading(false);
+      }
+    };
+    fetchClasses();
+    return () => { isActive = false; };
+  }, []);
+
+  const SidebarLink = ({ to, icon: Icon, children }) => (
   <Link
     to={to}
     className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 transition-all hover:text-white hover:bg-slate-700/50"
@@ -41,13 +65,8 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
   </Link>
 );
 
-const StudentDashboard = () => {
-  const navigate = useNavigate();
-  const { logout } = useAuth();
-  const [studentName] = useState(student.name);
-
-  const handleLessonClick = (lessonId) => {
-    navigate(`/lesson/${lessonId}`);
+  const handleLessonClick = (classId) => {
+    navigate(`/lesson/${classId}`);
   };
 
   return (
@@ -77,9 +96,11 @@ const StudentDashboard = () => {
             </nav>
           </div>
           <div className="mt-auto p-4 border-t border-slate-800">
-            <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
-              <Settings className="h-4 w-4" /> Settings
-            </Button>
+            <Link to="/student-settings" className="w-full">
+              <Button variant="secondary" className="w-full flex items-center justify-center gap-2">
+                <Settings className="h-4 w-4" /> Settings
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -110,9 +131,7 @@ const StudentDashboard = () => {
                   <BookCheck className="h-5 w-5 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">
-                    {student.completedLessons}/{student.totalLessons}
-                  </div>
+                  <div className="text-3xl font-bold">0/{classes.length}</div>
                   <p className="text-xs text-muted-foreground">Keep up the great work!</p>
                 </CardContent>
               </Card>
@@ -123,7 +142,7 @@ const StudentDashboard = () => {
                   <TrendingUp className="h-5 w-5 text-orange-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{student.weeklyProgress}%</div>
+                  <div className="text-3xl font-bold">0%</div>
                   <p className="text-xs text-muted-foreground">Improvement from last week</p>
                 </CardContent>
               </Card>
@@ -134,7 +153,7 @@ const StudentDashboard = () => {
                   <Library className="h-5 w-5 text-purple-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{lessons.length}</div>
+                  <div className="text-3xl font-bold">{classes.length}</div>
                   <p className="text-xs text-muted-foreground">Currently enrolled</p>
                 </CardContent>
               </Card>
@@ -149,26 +168,24 @@ const StudentDashboard = () => {
                 View All
               </Link>
             </div>
+            {loading && <div>Loading...</div>}
+            {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-              {lessons.map((lesson) => (
+              {(Array.isArray(classes) ? classes : []).map((klass) => (
                 <div
-                  key={lesson.id}
+                  key={klass._id}
                   className="group relative rounded-xl border bg-white shadow-sm overflow-hidden transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                  onClick={() => handleLessonClick(lesson.id)}
+                  onClick={() => handleLessonClick(klass._id)}
                 >
                   <div className="h-40 overflow-hidden">
-                    <img
-                      src={lesson.imageUrl}
-                      alt={lesson.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+                    <div className="w-full h-full bg-slate-200" />
                   </div>
                   <div className="p-4">
-                    <h3 className="text-lg font-semibold text-slate-800">{lesson.title}</h3>
+                    <h3 className="text-lg font-semibold text-slate-800">{klass?.name || 'Unnamed Class'}</h3>
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex items-center gap-2 text-sm text-slate-500">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                          <span>{lesson.students} students</span>
+                          <span>{klass?.enrolledStudents?.length || 0} students</span>
                       </div>
                       <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-500">
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 group-hover:text-white"><path d="m9 18 6-6-6-6"/></svg>
@@ -177,15 +194,18 @@ const StudentDashboard = () => {
                   </div>
                   {/* Progress Badge */}
                   <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-semibold text-blue-700">
-                      {lesson.progress}% Complete
+                      0% Complete
                   </div>
                   {/* Progress Bar */}
                   <div className="w-full bg-slate-200 h-1.5">
-                      <div className="bg-blue-500 h-1.5" style={{ width: `${lesson.progress}%` }}></div>
+                      <div className="bg-blue-500 h-1.5" style={{ width: `0%` }}></div>
                   </div>
                 </div>
               ))}
             </div>
+            {!loading && !error && Array.isArray(classes) && classes.length === 0 && (
+              <div className="text-sm text-slate-500">No classes enrolled yet.</div>
+            )}
           </div>
         </main>
       </div>
