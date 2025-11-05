@@ -22,7 +22,7 @@ const TeacherCreateClass = () => {
       if (res?.data?.class) {
         setName("");
         setDescription("");
-        navigate('/teacher-classes');
+        navigate('/teacher-dashboard');
       }
     } catch (e) {
       setError('Failed to create class');

@@ -3,8 +3,12 @@ import Teacher from "../models/Teacher.js";
 import ClassModel from "../models/Class.js";
 import Notification from "../models/Notification.js";
 import { protect, isTeacher } from "../middleware/authMiddleware.js";
+import { getDashboardOverview, createClass, gradeSubmission } from "../controllers/teacherController.js";
 
 const router = express.Router();
+
+// Dashboard overview
+router.get("/dashboard", protect, isTeacher, getDashboardOverview);
 
 // Get classes for current teacher
 router.get("/classes", protect, isTeacher, async (req, res) => {
@@ -21,29 +25,10 @@ router.get("/classes", protect, isTeacher, async (req, res) => {
 });
 
 // Create a new class for current teacher
-router.post("/classes", protect, isTeacher, async (req, res) => {
-  try {
-    const { name, description } = req.body;
-    if (!name) return res.status(400).json({ msg: "Class name is required" });
+router.post("/classes", protect, isTeacher, createClass);
 
-    let teacher = await Teacher.findOne({ userId: req.user._id });
-    if (!teacher) {
-      // Auto-create teacher profile if missing
-      teacher = await Teacher.create({ userId: req.user._id, classes: [] });
-    }
-
-    const newClass = await ClassModel.create({ name, description: description || "", teacher: teacher._id, enrolledStudents: [] });
-    teacher.classes.push(newClass._id);
-    await teacher.save();
-
-    const populated = await ClassModel.findById(newClass._id).populate("teacher");
-    res.status(201).json({ class: populated });
-  } catch (e) {
-    res.status(500).json({ msg: "Server error" });
-  }
-});
-
-export default router;
+// Grade a submission
+router.put("/submission/:submissionId/grade", protect, isTeacher, gradeSubmission);
 
 // Teacher notifications - list
 router.get("/notifications", protect, isTeacher, async (req, res) => {
@@ -66,5 +51,7 @@ router.post("/notifications/:id/read", protect, isTeacher, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+export default router;
 
 
