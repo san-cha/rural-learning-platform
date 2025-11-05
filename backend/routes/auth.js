@@ -15,8 +15,10 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
+  // We use SameSite=None and secure=true for cross-site cookies, 
+  // which is necessary when FE (5173) and BE (5000) are different.
+  secure: true, 
+  sameSite: "none", 
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 

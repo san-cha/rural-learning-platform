@@ -1,11 +1,33 @@
 import express from "express";
 import User from "../models/User.js";
 import Teacher from "../models/Teacher.js";
-import Student from "../models/Student.js";
+// import Student from "../models/Student.js";
 import ClassModel from "../models/Class.js";
 import { protect, isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// GET /api/admin/stats - Get dashboard statistics
+router.get("/stats", protect, isAdmin, async (req, res) => {
+  try {
+    const [studentCount, teacherCount, classCount] = await Promise.all([
+      User.countDocuments({ role: 'student' }), 
+      User.countDocuments({ role: 'teacher' }), // 🛑 Use User model and filter by role: 'teacher'
+      ClassModel.countDocuments(),
+    ]);
+
+    // Send all the counts back in one object
+    res.json({
+      students: studentCount,
+      teachers: teacherCount,
+      classes: classCount,
+    });
+
+  } catch (e) {
+    console.error(e.message);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
 
 // List users
 router.get("/users", protect, isAdmin, async (req, res) => {
