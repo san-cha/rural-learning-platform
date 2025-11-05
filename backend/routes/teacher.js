@@ -7,7 +7,8 @@ import ClassModel from "../models/Class.js";
 import Notification from "../models/Notification.js";
 import { protect, isTeacher } from "../middleware/authMiddleware.js";
 import { 
-  getDashboardOverview, 
+  getDashboardOverview,
+  getDashboardData,
   createClass, 
   gradeSubmission, 
   getClassDetails, 
@@ -51,6 +52,9 @@ const router = express.Router();
 
 // Dashboard overview
 router.get("/dashboard", protect, isTeacher, getDashboardOverview);
+
+// Dashboard data (comprehensive)
+router.get("/dashboard-data", protect, isTeacher, getDashboardData);
 
 // Get classes for current teacher
 router.get("/classes", protect, isTeacher, async (req, res) => {

@@ -62,6 +62,104 @@ export const getDashboardOverview = async (req, res) => {
 };
 
 /**
+ * Get comprehensive dashboard data
+ * GET /teacher/dashboard-data
+ */
+export const getDashboardData = async (req, res) => {
+  try {
+    const teacher = await Teacher.findOne({ userId: req.user._id });
+    if (!teacher) {
+      return res.status(404).json({ msg: "Teacher profile not found" });
+    }
+
+    // Get all classes for this teacher
+    const classes = await ClassModel.find({ _id: { $in: teacher.classes } })
+      .populate("enrolledStudents");
+
+    // Calculate totalStudentsCount: Count of all unique students enrolled across all classes
+    const uniqueStudentIds = new Set();
+    classes.forEach((klass) => {
+      if (Array.isArray(klass.enrolledStudents)) {
+        klass.enrolledStudents.forEach((student) => {
+          if (student?._id) {
+            uniqueStudentIds.add(student._id.toString());
+          }
+        });
+      }
+    });
+    const totalStudentsCount = uniqueStudentIds.size;
+
+    // Get all assignments for this teacher
+    const assignments = await Assignment.find({ teacherId: teacher._id });
+
+    // Calculate assignmentsToGradeCount: Count of all submissions with grade === null
+    let assignmentsToGradeCount = 0;
+    assignments.forEach((assignment) => {
+      const ungradedSubmissions = assignment.submissions.filter(
+        (sub) => sub.grade === null || sub.grade === undefined
+      );
+      assignmentsToGradeCount += ungradedSubmissions.length;
+    });
+
+    // Get all materials for this teacher's classes
+    const classIds = classes.map((klass) => klass._id);
+    const materials = await Material.find({ classId: { $in: classIds } });
+
+    // Calculate uploadedContentCount: Total count of Assignment and Material documents
+    const uploadedContentCount = assignments.length + materials.length;
+
+    // Get recentContent: 5 most recently created Assignment and Material documents
+    const allContent = [
+      ...assignments.map((a) => ({
+        _id: a._id,
+        title: a.title,
+        type: "Assignment",
+        createdAt: a.createdAt,
+        classId: a.classId,
+      })),
+      ...materials.map((m) => ({
+        _id: m._id,
+        title: m.title,
+        type: "Material",
+        createdAt: m.createdAt,
+        classId: m.classId,
+      })),
+    ];
+
+    // Sort by creation date (newest first) and take top 5
+    const recentContent = allContent
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 5)
+      .map((item) => ({
+        _id: item._id,
+        title: item.title,
+        type: item.type,
+        createdAt: item.createdAt,
+        classId: item.classId,
+      }));
+
+    // Active Classes List: Return classes with student count
+    const activeClasses = classes.map((klass) => ({
+      _id: klass._id,
+      name: klass.name,
+      description: klass.description,
+      studentCount: klass.enrolledStudents?.length || 0,
+    }));
+
+    res.json({
+      totalStudentsCount,
+      assignmentsToGradeCount,
+      uploadedContentCount,
+      recentContent,
+      activeClasses,
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};
+
+/**
  * Create a new class for the authenticated teacher
  * POST /teacher/classes
  */
@@ -340,10 +438,14 @@ export const getAssignmentDetails = async (req, res) => {
       return res.status(403).json({ msg: "Unauthorized to view this assignment" });
     }
 
-    res.json({ assignment });
+    // Return the assignment object directly
+    res.json({ 
+      assignment,
+      msg: "Assignment retrieved successfully"
+    });
   } catch (error) {
     console.error("Error fetching assignment details:", error);
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ msg: "Server error", error: error.message });
   }
 };
 

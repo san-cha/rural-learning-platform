@@ -27,16 +27,38 @@ const TeacherAssignmentEdit = () => {
     const fetchAssignment = async () => {
       setLoading(true);
       setError("");
+      console.log("Fetching assignment with ID:", assignmentId);
       try {
         const res = await axios.get(`/teacher/assignments/${assignmentId}`);
+        console.log("Assignment fetch response:", res.data);
         if (!isActive) return;
         const assignmentData = res?.data?.assignment;
+        
+        if (!assignmentData) {
+          console.error("No assignment data in response");
+          setError("Assignment data not found in response");
+          return;
+        }
+        
+        console.log("Setting assignment data:", assignmentData);
         setAssignment(assignmentData);
         
         // Populate form fields
-        setTitle(assignmentData.title || "");
-        setDescription(assignmentData.description || "");
-        setAssignmentType(assignmentData.assignmentType || "file");
+        const titleValue = assignmentData.title || "";
+        const descriptionValue = assignmentData.description || "";
+        const typeValue = assignmentData.assignmentType || "file";
+        
+        console.log("Form field values:", {
+          title: titleValue,
+          description: descriptionValue,
+          assignmentType: typeValue,
+          hasDueDate: !!assignmentData.dueDate,
+          quizQuestionsCount: assignmentData.quizData?.questions?.length || 0,
+        });
+        
+        setTitle(titleValue);
+        setDescription(descriptionValue);
+        setAssignmentType(typeValue);
         
         // Format due date for datetime-local input
         if (assignmentData.dueDate) {
@@ -46,15 +68,19 @@ const TeacherAssignmentEdit = () => {
           const day = String(date.getDate()).padStart(2, '0');
           const hours = String(date.getHours()).padStart(2, '0');
           const minutes = String(date.getMinutes()).padStart(2, '0');
-          setDueDate(`${year}-${month}-${day}T${hours}:${minutes}`);
+          const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+          console.log("Formatted due date:", formattedDate);
+          setDueDate(formattedDate);
         } else {
           setDueDate("");
         }
         
         // Set quiz questions if they exist
         if (assignmentData.quizData?.questions && Array.isArray(assignmentData.quizData.questions)) {
+          console.log("Setting quiz questions:", assignmentData.quizData.questions);
           setQuizQuestions(assignmentData.quizData.questions);
         } else {
+          console.log("No quiz questions found, setting empty array");
           setQuizQuestions([]);
         }
         
@@ -63,8 +89,10 @@ const TeacherAssignmentEdit = () => {
           setRawText(""); // Will need to be re-entered
         }
       } catch (e) {
+        console.error("Error fetching assignment:", e);
+        console.error("Error response:", e?.response?.data);
         if (!isActive) return;
-        setError("Failed to load assignment details");
+        setError("Failed to load assignment details: " + (e?.response?.data?.msg || e?.message || "Unknown error"));
       } finally {
         if (isActive) setLoading(false);
       }
@@ -99,6 +127,18 @@ const TeacherAssignmentEdit = () => {
     setSaving(true);
     setError("");
 
+    console.log("Form submission started");
+    console.log("Current form state:", {
+      title,
+      description,
+      assignmentType,
+      dueDate,
+      quizQuestions: quizQuestions,
+      quizQuestionsCount: quizQuestions.length,
+      hasFile: !!file,
+      rawText: rawText?.substring(0, 50) + "...",
+    });
+
     try {
       const formData = new FormData();
       formData.append("title", title);
@@ -115,20 +155,22 @@ const TeacherAssignmentEdit = () => {
       // Handle different assignment types
       if (assignmentType === "file" && file) {
         formData.append("file", file);
+        console.log("Added file to form data");
       } else if (assignmentType === "manual-quiz") {
         // Ensure quizQuestions is properly structured
         const validQuestions = quizQuestions.filter(q => q.question && q.question.trim() !== "");
-        if (validQuestions.length > 0) {
-          formData.append("quizData", JSON.stringify({ questions: validQuestions }));
-        } else {
-          formData.append("quizData", JSON.stringify({ questions: [] }));
-        }
+        const quizDataObj = { questions: validQuestions.length > 0 ? validQuestions : [] };
+        const quizDataString = JSON.stringify(quizDataObj);
+        formData.append("quizData", quizDataString);
+        console.log("Added quiz data:", quizDataString);
       } else if (assignmentType === "text-to-quiz") {
         formData.append("rawText", rawText || "");
+        console.log("Added raw text to form data");
       }
 
       // Debug: Log the payload structure
       console.log("Submitting assignment update:", {
+        assignmentId,
         title,
         description,
         assignmentType,
@@ -138,19 +180,28 @@ const TeacherAssignmentEdit = () => {
         rawTextLength: rawText?.length || 0,
       });
 
+      console.log("Sending PUT request to:", `/teacher/assignments/${assignmentId}`);
       const res = await axios.put(`/teacher/assignments/${assignmentId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log("Update response:", res.data);
+      console.log("Update response received:", res.data);
+      console.log("Assignment after update:", res?.data?.assignment);
 
       if (res?.data?.assignment) {
         // Show success message briefly before redirect
+        const classId = res.data.assignment.classId?._id || res.data.assignment.classId;
+        console.log("Navigating to class:", classId);
         alert("Assignment updated successfully!");
-        navigate(`/teacher-classes/${assignment.classId?._id || assignment.classId}`);
+        navigate(`/teacher-classes/${classId}`);
+      } else {
+        console.warn("No assignment in response:", res.data);
+        setError("Update successful but no assignment data returned");
       }
     } catch (e) {
       console.error("Error updating assignment:", e);
+      console.error("Error response:", e?.response?.data);
+      console.error("Error status:", e?.response?.status);
       setError(e?.response?.data?.msg || e?.message || "Failed to update assignment");
     } finally {
       setSaving(false);

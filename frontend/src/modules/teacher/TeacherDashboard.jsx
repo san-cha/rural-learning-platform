@@ -7,56 +7,48 @@ import {
   PlusCircle,
   FileText,
   CheckSquare,
-  Video,
-  FileAudio,
 } from "lucide-react";
 
 import axios from "../../api/axiosInstance.jsx";
 
-// Placeholder content list kept, but will later be backed by real uploads endpoint if available
-const content = [];
-
-// Helper
-const getIconForType = (type) => {
-  if (type === "Audio") return <FileAudio className="h-5 w-5 text-orange-500" />;
-  if (type === "Video") return <Video className="h-5 w-5 text-purple-500" />;
-  return <FileText className="h-5 w-5 text-blue-500" />;
-};
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [dashboardData, setDashboardData] = useState({
-    totalStudents: 0,
-    assignmentsToGrade: 0,
-    uploadedContent: 0,
+    totalStudentsCount: 0,
+    assignmentsToGradeCount: 0,
+    uploadedContentCount: 0,
     activeClasses: [],
+    recentContent: [],
   });
 
-  // Fetch dashboard overview data
+  // Fetch dashboard data
   useEffect(() => {
     let isActive = true;
     const fetchDashboard = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await axios.get("/teacher/dashboard");
+        const res = await axios.get("/teacher/dashboard-data");
         if (!isActive) return;
         setDashboardData({
-          totalStudents: res?.data?.totalStudents || 0,
-          assignmentsToGrade: res?.data?.assignmentsToGrade || 0,
-          uploadedContent: res?.data?.uploadedContent || 0,
+          totalStudentsCount: res?.data?.totalStudentsCount || 0,
+          assignmentsToGradeCount: res?.data?.assignmentsToGradeCount || 0,
+          uploadedContentCount: res?.data?.uploadedContentCount || 0,
           activeClasses: Array.isArray(res?.data?.activeClasses) ? res.data.activeClasses : [],
+          recentContent: Array.isArray(res?.data?.recentContent) ? res.data.recentContent : [],
         });
       } catch (e) {
         if (!isActive) return;
         setError("Failed to load dashboard data");
         setDashboardData({
-          totalStudents: 0,
-          assignmentsToGrade: 0,
-          uploadedContent: 0,
+          totalStudentsCount: 0,
+          assignmentsToGradeCount: 0,
+          uploadedContentCount: 0,
           activeClasses: [],
+          recentContent: [],
         });
       } finally {
         if (isActive) setLoading(false);
@@ -98,7 +90,7 @@ const TeacherDashboard = () => {
                   <Users className="h-5 w-5 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{dashboardData.totalStudents}</div>
+                  <div className="text-3xl font-bold">{dashboardData.totalStudentsCount}</div>
                   <p className="text-xs text-muted-foreground">Across {dashboardData.activeClasses.length} active classes</p>
                 </CardContent>
               </Card>
@@ -112,7 +104,7 @@ const TeacherDashboard = () => {
                   <CheckSquare className="h-5 w-5 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{dashboardData.assignmentsToGrade}</div>
+                  <div className="text-3xl font-bold">{dashboardData.assignmentsToGradeCount}</div>
                   <p className="text-xs text-muted-foreground">Pending submissions</p>
                 </CardContent>
               </Card>
@@ -126,8 +118,8 @@ const TeacherDashboard = () => {
                   <FileText className="h-5 w-5 text-cyan-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{dashboardData.uploadedContent}</div>
-                  <p className="text-xs text-muted-foreground">Total files uploaded</p>
+                  <div className="text-3xl font-bold">{dashboardData.uploadedContentCount}</div>
+                  <p className="text-xs text-muted-foreground">Total assignments and materials</p>
                 </CardContent>
               </Card>
             </div>
@@ -171,16 +163,40 @@ const TeacherDashboard = () => {
               <CardDescription>A list of lessons and materials you've recently uploaded.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {content.map((item) => (
-                <div key={item.title} className="flex items-center gap-4 rounded-lg border p-4">
-                  <div className="flex-shrink-0">{getIconForType(item.type)}</div>
+              {loading && <div>Loading...</div>}
+              {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
+              {(Array.isArray(dashboardData.recentContent) ? dashboardData.recentContent : []).map((item) => (
+                <div 
+                  key={item._id} 
+                  className="flex items-center gap-4 rounded-lg border p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                  onClick={() => {
+                    if (item.type === "Assignment") {
+                      navigate(`/teacher-assignments/${item._id}`);
+                    } else if (item.type === "Material") {
+                      // Navigate to class detail page with materials section
+                      navigate(`/teacher-classes/${item.classId}`);
+                    }
+                  }}
+                >
+                  <div className="flex-shrink-0">
+                    {item.type === "Assignment" ? (
+                      <FileText className="h-5 w-5 text-blue-500" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-green-500" />
+                    )}
+                  </div>
                   <div className="flex-grow">
                     <p className="font-medium">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.class}</p>
+                    <p className="text-sm text-muted-foreground">{item.type}</p>
                   </div>
-                  <div className="text-right text-sm text-muted-foreground">{item.date}</div>
+                  <div className="text-right text-sm text-muted-foreground">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
+                  </div>
                 </div>
               ))}
+              {!loading && !error && Array.isArray(dashboardData.recentContent) && dashboardData.recentContent.length === 0 && (
+                <div className="text-sm text-slate-500 text-center py-4">No recent content yet.</div>
+              )}
             </CardContent>
           </Card>
     </div>
