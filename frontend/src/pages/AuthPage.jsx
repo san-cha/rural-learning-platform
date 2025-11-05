@@ -38,6 +38,7 @@ const AuthPage = () => {
     { value: 'student', label: 'Student' },
     { value: 'teacher', label: 'Teacher' },
     { value: 'admin', label: 'Admin/NGO' },
+    { value: 'technician', label: 'Technician'},
   ];
   useEffect(() => {
     setError(null);
@@ -52,6 +53,7 @@ const AuthPage = () => {
       if (user.role === "student") navigate("/student-dashboard", { replace: true });
       else if (user.role === "teacher") navigate("/teacher-dashboard", { replace: true });
       else if (user.role === "admin") navigate("/admin-dashboard", { replace: true });
+      else if (user.role === "technician") navigate("/tech-dashboard", { replace: true });
       else navigate("/", { replace: true });
     }
   }, [user, navigate]);

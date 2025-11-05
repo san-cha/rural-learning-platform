@@ -15,6 +15,8 @@ import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
 import ErrorPage from "./pages/Error.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import TechDashboard from './modules/technician/TechDashboard';
+
 // NOTE: keep this link tag in index.html or public/index.html for correct HTML placement
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
 
@@ -49,6 +51,10 @@ function App() {
           {/* Student-protected routes */}
           <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
             <Route path="/student-dashboard" element={<StudentDashboard />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["technician"]} />}>
+            <Route path="/tech-dashboard" element={<TechDashboard />} />
           </Route>
 
           {/* Fallback / 404 */}

@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js"; 
 import authRoutes from "./routes/auth.js";
+import ticketRouter from './routes/tickets.js';
 
 dotenv.config();
 connectDB();
@@ -24,5 +25,6 @@ app.get("/", (req, res) => {
 
 // API Routes
 app.use("/auth", authRoutes);
+app.use('/api/tickets', ticketRouter); // All ticket routes will be at /api/tickets
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
