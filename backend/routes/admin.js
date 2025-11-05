@@ -10,9 +10,10 @@ const router = express.Router();
 // GET /api/admin/stats - Get dashboard statistics
 router.get("/stats", protect, isAdmin, async (req, res) => {
   try {
-    const [studentCount, teacherCount, classCount] = await Promise.all([
+    const [studentCount, teacherCount, technicianCount, classCount] = await Promise.all([
       User.countDocuments({ role: 'student' }), 
       User.countDocuments({ role: 'teacher' }), // 🛑 Use User model and filter by role: 'teacher'
+      User.countDocuments({ role: 'technician' }),
       ClassModel.countDocuments(),
     ]);
 
@@ -20,7 +21,8 @@ router.get("/stats", protect, isAdmin, async (req, res) => {
     res.json({
       students: studentCount,
       teachers: teacherCount,
-      classes: classCount,
+      technicians: technicianCount,
+      // classes: classCount,
     });
 
   } catch (e) {
@@ -70,5 +72,3 @@ router.get("/classes", protect, isAdmin, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
-
-

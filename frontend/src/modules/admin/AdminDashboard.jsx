@@ -3,23 +3,9 @@ import { Download, Users, Globe, Zap, BookOpen, MessageSquare, Smartphone, BarCh
 import { Link } from 'react-router-dom';
 import { useAuth } from "../../contexts/AuthContext";
 import axios from "../../api/axiosInstance.jsx";
+import { CogIcon } from 'lucide-react';
 
 // --- MOCK DATA FOR DEMONSTRATION ---
-// NOTE: We initialize all dynamic values to '0' here, and the API result will overwrite them.
-const mockDashboardData = {
-  metrics: [
-    { title: 'Total Active Learners', value: '0', icon: Users, color: 'bg-blue-600' }, 
-    { title: 'Total Active Teachers', value: '0', icon: User, color: 'bg-indigo-600' }, 
-    { title: 'Active Classes/Courses', value: '0', icon: BookOpen, color: 'bg-purple-600' },
-    // The rest of these are hardcoded mock data for non-API metrics
-    { title: 'Offline Content Downloads', value: '41,290', icon: Download, color: 'bg-teal-600' },
-    { title: 'Mobile-Only Users', value: '7,120', icon: Smartphone, color: 'bg-rose-500' },
-    { title: 'Low-Bandwidth Mode', value: '5,980', icon: Zap, color: 'bg-cyan-600' },
-  ],
-    // 🛑 CRITICAL FIX: These values will be passed from the real stats object (even if they are 0)
-  supportTicketsOpen: 0, 
-  communityHubLogins: 0,
-};
 
 const mockContent = [
   { id: 101, title: 'Basic Math (Gr 5)', languageStatus: 'All Localized', downloads: '15.2K', views: '20.1K', status: 'Live' },
@@ -40,8 +26,8 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
   </div>
 );
 
-const OverviewSection = ({ data }) => {
-  const cards = data.metrics || [];
+const OverviewSection = ({ metrics }) => {
+  const cards = metrics || [];
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">Platform Health & Access Metrics</h2>
@@ -338,8 +324,7 @@ const UsersSection = ({ users, teachers, addNewTeacher }) => {
 };
 
 
-const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
-  const [activeTab, setActiveTab] = useState('overview');
+const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics }) => {  const [activeTab, setActiveTab] = useState('overview');
   const { logout } = useAuth();
 
   const navigation = useMemo(() => [
@@ -353,7 +338,7 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <OverviewSection data={data} />;
+        return <OverviewSection metrics={metrics} data={data} />;
       case 'content':
         return <ContentSection content={content} />;
       case 'users':
@@ -431,48 +416,83 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher }) => {
   );
 };
 
+// const getDashboardData = (stats) => {
+//     if (!mockDashboardData || !mockDashboardData.metrics) {
+//         return { metrics: [] };
+//     }
 
-const getDashboardData = (stats) => {
-    if (!mockDashboardData || !mockDashboardData.metrics) {
-        return { metrics: [] };
-    }
-
-    const updatedMetrics = mockDashboardData.metrics.map(metric => {
-        if (metric.title === "Total Active Learners") {
-            return { ...metric, value: stats.students.toLocaleString() };
-        } 
-        else if (metric.title === "Total Active Teachers") {
-            return { ...metric, value: stats.teachers.toLocaleString() };
-        }
-        else if (metric.title === "Active Classes/Courses") {
-            return { ...metric, value: stats.classes.toLocaleString() };
-        }
-        return metric;
-    });
-    
-    // 🛑 CRITICAL FIX: Ensure the other non-metric properties use the real stats too
-    // If you were tracking 'openTickets' or 'logins' in your /admin/stats endpoint, 
-    // you'd update those properties here as well. Since your API only returns students/teachers/classes, 
-    // we'll pass the stats object through or default to 0.
-    return {
-        ...mockDashboardData,
-        metrics: updatedMetrics,
-        supportTicketsOpen: stats.supportTicketsOpen || 0, // Default to 0 if not in API response
-        communityHubLogins: stats.communityHubLogins || 0, // Default to 0 if not in API response
-    };
-};
+//     const updatedMetrics = mockDashboardData.metrics.map(metric => {
+//         if (metric.title === "Total Active Learners") {
+//             return { ...metric, value: stats.students.toLocaleString() };
+//         } 
+//         else if (metric.title === "Total Active Teachers") {
+//             return { ...metric, value: stats.teachers.toLocaleString() };
+//         }
+//         else if (metric.title === "Active Classes/Courses") {
+//             return { ...metric, value: stats.classes.toLocaleString() };
+//         }
+//         return metric;
+//     });
+//     
+//     // 🛑 CRITICAL FIX: Ensure the other non-metric properties use the real stats too
+//     // If you were tracking 'openTickets' or 'logins' in your /admin/stats endpoint, 
+//     // you'd update those properties here as well. Since your API only returns students/teachers/classes, 
+//     // we'll pass the stats object through or default to 0.
+//     return {
+//         ...mockDashboardData,
+//         metrics: updatedMetrics,
+//         supportTicketsOpen: stats.supportTicketsOpen || 0, // Default to 0 if not in API response
+//         communityHubLogins: stats.communityHubLogins || 0, // Default to 0 if not in API response
+//     };
+// };
 
 
 const AdminDashboard = () => {
-  const [teachers, setTeachers] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [stats, setStats] = useState({ students: 0, teachers: 0, classes: 0, supportTicketsOpen: 0, communityHubLogins: 0 }); 
+  const [teachers, setTeachers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const addNewTeacher = (newTeacherData) => {
-    setTeachers(prev => [...prev, newTeacherData]);
-  };
+  // CRITICAL: Initialize ALL dynamic stats here
+  const [stats, setStats] = useState({ 
+    students: 0, 
+    teachers: 0, 
+    technicians: 0, 
+    supportTicketsOpen: 0, 
+    communityHubLogins: 0 
+  }); 
+
+  const addNewTeacher = (newTeacherData) => {
+    setTeachers(prev => [...prev, newTeacherData]);
+  };
+
+  // CORRECT: Define metrics array INSIDE the component body
+  const metrics = [
+    // DYNAMIC CARDS
+    { 
+      title: 'Total Active Learners', 
+      value: stats.students, 
+      icon: Users, 
+      color: 'bg-blue-600' 
+    }, 
+    { 
+      title: 'Total Active Teachers', 
+      value: stats.teachers, 
+      icon: User, 
+      color: 'bg-indigo-600' 
+    }, 
+    { 
+      title: 'Total Technicians', 
+      value: stats.technicians, 
+      icon: CogIcon,
+      color: 'bg-purple-600' 
+    },
+    
+    // STATIC/MOCK CARDS
+    { title: 'Offline Content Downloads', value: '41,290', icon: Download, color: 'bg-teal-600' },
+    { title: 'Mobile-Only Users', value: '7,120', icon: Smartphone, color: 'bg-rose-500' },
+    { title: 'Low-Bandwidth Mode', value: '5,980', icon: Zap, color: 'bg-cyan-600' },
+  ];
 
   useEffect(() => {
     let isActive = true;
@@ -515,25 +535,36 @@ const AdminDashboard = () => {
     return () => { isActive = false; };
   }, []);
 
-
-const dashboardData = getDashboardData(stats);
 const contentData = mockContent;
 
   return (
-    <>
-      {loading && <div className="p-4">Loading...</div>}
-      {error && !loading && <div className="p-4 text-red-600 text-sm">{error}</div>}
-      {!loading && (
-        <CoreDashboard
-          data={dashboardData}
-          users={(Array.isArray(users) ? users : []).map(u => ({ id: u?._id, name: u?.name || 'Unknown', device: '', lastLogin: '', status: 'Active', language: '' }))}
-          teachers={Array.isArray(teachers) ? teachers : []}
-          content={contentData}
-          addNewTeacher={addNewTeacher}
-        />
-      )}
-    </>
-  );
+    <>
+      {/* 1. Display the error message at the top if one exists */}
+      {error && <div className="p-4 text-red-600 font-medium bg-red-100 border-l-4 border-red-500 mb-4">{error}</div>}
+
+      {/* 2. Display the loading state */}
+      {loading && <div className="p-4">Loading Dashboard Data...</div>}
+
+      {/* 3. Render the CoreDashboard always when not loading, 
+            regardless of the error state, to keep the navigation visible. */}
+      {/* You should ensure 'contentData' is defined before this. */}
+      {!loading && (
+        <CoreDashboard
+          users={(Array.isArray(users) ? users : []).map(u => ({ id: u?._id, name: u?.name || 'Unknown', device: '', lastLogin: '', status: 'Active', language: '' }))}
+          teachers={Array.isArray(teachers) ? teachers : []}
+          content={contentData}
+          addNewTeacher={addNewTeacher}
+          metrics={metrics} // <--- CRITICAL: Pass the metrics array for the Overview cards!
+          // We need to pass the stats object for the Support tab as well
+          stats={stats}
+        />
+      )}
+      
+      {/* NOTE: If you want the CoreDashboard to be hidden entirely on error, 
+        revert to your original logic and focus on fixing the 401 error first.
+      */}
+    </>
+  );
 };
 
 export default AdminDashboard;
