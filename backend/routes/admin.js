@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import Teacher from "../models/Teacher.js";
 // import Student from "../models/Student.js";
 import ClassModel from "../models/Class.js";
+import Ticket from "../models/Ticket.js";
 import { protect, isAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -10,11 +11,12 @@ const router = express.Router();
 // GET /api/admin/stats - Get dashboard statistics
 router.get("/stats", protect, isAdmin, async (req, res) => {
   try {
-    const [studentCount, teacherCount, technicianCount, classCount] = await Promise.all([
+    const [studentCount, teacherCount, technicianCount, classCount, openTicketsCount] = await Promise.all([
       User.countDocuments({ role: 'student' }), 
-      User.countDocuments({ role: 'teacher' }), // 🛑 Use User model and filter by role: 'teacher'
+      User.countDocuments({ role: 'teacher' }),
       User.countDocuments({ role: 'technician' }),
       ClassModel.countDocuments(),
+      Ticket.countDocuments({ status: { $ne: 'resolved' } }),
     ]);
 
     // Send all the counts back in one object
@@ -22,7 +24,8 @@ router.get("/stats", protect, isAdmin, async (req, res) => {
       students: studentCount,
       teachers: teacherCount,
       technicians: technicianCount,
-      // classes: classCount,
+      classes: classCount,
+      supportTicketsOpen: openTicketsCount,
     });
 
   } catch (e) {

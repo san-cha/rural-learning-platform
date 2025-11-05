@@ -5,10 +5,10 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js"; 
 import authRoutes from "./routes/auth.js";
-import ticketRouter from './routes/tickets.js';
 import teacherRoutes from "./routes/teacher.js";
 import studentRoutes from "./routes/student.js";
 import adminRoutes from "./routes/admin.js";
+import ticketRoutes from './routes/tickets.js';
 
 dotenv.config();
 connectDB();
@@ -42,17 +42,20 @@ app.use(
   })
 );
 
+app.use(express.json()); // Parses JSON bodies
+app.use(express.urlencoded({ extended: true }));
+
 app.use(cookieParser());
-app.use(express.json());
+
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
 // API Routes
 app.use("/auth", authRoutes);
-app.use('/api/tickets', ticketRouter); // All ticket routes will be at /api/tickets
 app.use("/teacher", teacherRoutes);
 app.use("/student", studentRoutes);
 app.use("/admin", adminRoutes);
+app.use('/api/tickets', ticketRoutes); 
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
