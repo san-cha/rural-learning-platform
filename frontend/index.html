@@ -1,48 +1,83 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Your App</title>
-    <style>
-      /* Hide Google's default top banner */
-      .goog-te-banner-frame.skiptranslate {
-        display: none !important;
-      }
-      body {
-        top: 0px !important;
-      }
-      /* Style the dropdown */
-      #google_translate_element select {
-        background: #f1f1f1;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        padding: 5px;
-        font-size: 14px;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="google_translate_element" 
-         style="position: fixed; top: 10px; right: 10px; z-index: 9999;"></div>
-    <div id="root"></div>
 
-    <script type="module" src="/src/main.jsx"></script>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/image.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SarvShiksha</title>
+  <style>
+    .goog-te-banner-frame * {
+      font-size: 10px !important;
+      line-height: 1 !important;
+      padding: 2px !important;
+      height: 10 !important;
+    }
 
-    <!-- Google Translate Widget -->
-    <script type="text/javascript">
-      function googleTranslateElementInit() {
-        new google.translate.TranslateElement({
-          pageLanguage: 'en',
-          includedLanguages: 'en,hi',
-          layout: google.translate.TranslateElement.InlineLayout.SIMPLE
-        }, 'google_translate_element');
+    html {
+      margin-top: 0 !important;
+      padding-top: 20 !important;
+    }
+
+    #google_translate_element {
+      position: fixed !important;
+      top: 6px !important;
+      left: 65% !important;
+      transform: translateX(-0%) scale(0.5) !important;
+      transform-origin: top center !important;
+      z-index: 99999 !important;
+      background: transparent !important;
+    }
+
+    #google_translate_element select {
+      background: #f1f1f1 !important;
+      border: 1px solid #ccc !important;
+      border-radius: 6px !important;
+      padding: 4px 8px !important;
+      font-size: 12px !important;
+      min-width: 120px !important;
+      max-width: 150px !important;
+      height: 28px !important;
+    }
+
+    .goog-te-gadget {
+      font-size: 11px !important;
+    }
+
+    .goog-te-gadget-simple {
+      padding: 4px !important;
+      font-size: 11px !important;
+    }
+
+    @media (max-width: 768px) {
+      #google_translate_element {
+        bottom: 40px !important;
+        right: 10px !important;
+        transform: scale(0.75) !important;
+        top: auto !important;
       }
-    </script>
+    }
+  </style>
+</head>
 
-    <script type="text/javascript" 
-    src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
-    </script>
-  </body>
+<body>
+  <div id="google_translate_element"></div>
+  <div id="root"></div>
+
+  <script type="module" src="/src/main.jsx"></script>
+
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'en,hi,ta,te,mr',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, 'google_translate_element');
+    }
+  </script>
+
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
+  </script>
+</body>
+
 </html>
