@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/Card";
 import Button from "../../components/ui/Button.jsx";
 import { Link, useNavigate } from "react-router-dom";
@@ -43,38 +43,57 @@ const SidebarLink = ({ to, icon: Icon, children }) => (
 const TeacherDashboard = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [dashboardData, setDashboardData] = useState({
+    totalStudents: 0,
+    assignmentsToGrade: 0,
+    uploadedContent: 0,
+    activeClasses: [],
+  });
 
+  // Fetch dashboard overview data
   useEffect(() => {
     let isActive = true;
-    const fetchClasses = async () => {
+    const fetchDashboard = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await axios.get("/teacher/classes");
+        const res = await axios.get("/teacher/dashboard");
         if (!isActive) return;
-        setClasses(Array.isArray(res?.data?.classes) ? res.data.classes : []);
+        setDashboardData({
+          totalStudents: res?.data?.totalStudents || 0,
+          assignmentsToGrade: res?.data?.assignmentsToGrade || 0,
+          uploadedContent: res?.data?.uploadedContent || 0,
+          activeClasses: Array.isArray(res?.data?.activeClasses) ? res.data.activeClasses : [],
+        });
       } catch (e) {
         if (!isActive) return;
-        setError("Failed to load classes");
-        setClasses([]);
+        setError("Failed to load dashboard data");
+        setDashboardData({
+          totalStudents: 0,
+          assignmentsToGrade: 0,
+          uploadedContent: 0,
+          activeClasses: [],
+        });
       } finally {
         if (isActive) setLoading(false);
       }
     };
-    fetchClasses();
+    fetchDashboard();
     return () => { isActive = false; };
   }, []);
 
-  const totals = useMemo(() => {
-    const totalStudents = classes.reduce((acc, c) => acc + (c.enrolledStudents?.length || 0), 0);
-    return { totalStudents };
-  }, [classes]);
-
   const handleCreateClass = () => {
     navigate('/teacher-create-class');
+  };
+
+  const handleCardClick = (route) => {
+    navigate(route);
+  };
+
+  const handleClassClick = (classId) => {
+    navigate(`/teacher-grades/${classId}`);
   };
 
   return (
@@ -132,36 +151,45 @@ const TeacherDashboard = () => {
               </Button>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
+              <Card 
+                className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+                onClick={() => handleCardClick('/teacher-classes')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Total Students</CardTitle>
                   <Users className="h-5 w-5 text-blue-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">{totals.totalStudents}</div>
-                  <p className="text-xs text-muted-foreground">Across {classes.length} active classes</p>
+                  <div className="text-3xl font-bold">{dashboardData.totalStudents}</div>
+                  <p className="text-xs text-muted-foreground">Across {dashboardData.activeClasses.length} active classes</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card 
+                className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+                onClick={() => handleCardClick('/teacher-grades/assignments-to-grade')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Assignments to Grade</CardTitle>
                   <CheckSquare className="h-5 w-5 text-green-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">12</div>
-                  <p className="text-xs text-muted-foreground">For 'Algebra Worksheet'</p>
+                  <div className="text-3xl font-bold">{dashboardData.assignmentsToGrade}</div>
+                  <p className="text-xs text-muted-foreground">Pending submissions</p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card 
+                className="cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+                onClick={() => handleCardClick('/teacher-classes')}
+              >
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Uploaded Content</CardTitle>
                   <FileText className="h-5 w-5 text-cyan-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">27</div>
-                  <p className="text-xs text-muted-foreground">12 Audio, 8 Videos, 7 PDFs</p>
+                  <div className="text-3xl font-bold">{dashboardData.uploadedContent}</div>
+                  <p className="text-xs text-muted-foreground">Total files uploaded</p>
                 </CardContent>
               </Card>
             </div>
@@ -176,11 +204,15 @@ const TeacherDashboard = () => {
             <CardContent className="space-y-4">
               {loading && <div>Loading...</div>}
               {error && !loading && <div className="text-red-600 text-sm">{error}</div>}
-              {(Array.isArray(classes) ? classes : []).map((klass) => (
-                <div key={klass._id} className="flex items-center justify-between rounded-lg border p-4">
+              {(Array.isArray(dashboardData.activeClasses) ? dashboardData.activeClasses : []).map((klass) => (
+                <div 
+                  key={klass._id} 
+                  className="flex items-center justify-between rounded-lg border p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:bg-slate-50"
+                  onClick={() => handleClassClick(klass._id)}
+                >
                   <div>
                     <p className="font-medium">{klass?.name || "Unnamed Class"}</p>
-                    <p className="text-sm text-muted-foreground">{klass?.enrolledStudents?.length || 0} Students</p>
+                    <p className="text-sm text-muted-foreground">{klass?.studentCount || 0} Students</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-lg text-blue-600">0%</p>
@@ -188,7 +220,7 @@ const TeacherDashboard = () => {
                   </div>
                 </div>
               ))}
-              {!loading && !error && Array.isArray(classes) && classes.length === 0 && (
+              {!loading && !error && Array.isArray(dashboardData.activeClasses) && dashboardData.activeClasses.length === 0 && (
                 <div className="text-sm text-slate-500">No classes yet.</div>
               )}
             </CardContent>
