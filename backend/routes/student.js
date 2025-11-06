@@ -12,7 +12,9 @@ import {
   markMaterialComplete,
   getAssessment,           // NEW
   getSubmission,           // NEW
-  submitAssessment         // NEW
+  submitAssessment,        // NEW
+  getClassesByGradeLevel,  // NEW
+  getDashboardOverview     // NEW
 } from '../controllers/studentController.js';
 
 const router = express.Router();
@@ -102,5 +104,11 @@ router.get('/class/:classId/content', protect, student, getClassContent);
 
 // Mark material/assignment as complete
 router.post('/material/:materialId/complete', protect, student, markMaterialComplete);
+
+// Get classes by grade level (for discovery)
+router.get('/classes-by-grade', protect, student, getClassesByGradeLevel);
+
+// Get student dashboard overview
+router.get('/dashboard', protect, student, getDashboardOverview);
 
 export default router;

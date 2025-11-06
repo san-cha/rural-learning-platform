@@ -127,9 +127,23 @@ export const setGrade = async (req, res) => {
 // @desc    Get all available classes for enrollment
 // @route   GET /student/all-classes
 // @access  Private (for students)
+// @query   Optional: gradeLevel - filter by grade level
 export const getAllClasses = async (req, res) => {
   try {
-    const classes = await ClassModel.find({})
+    const { gradeLevel } = req.query;
+    
+    // Build query - exclude classes the student is already enrolled in
+    const student = await Student.findOne({ userId: req.user._id });
+    const enrolledClassIds = student?.enrolledClasses || [];
+    
+    let query = { _id: { $nin: enrolledClassIds } };
+    
+    // Filter by gradeLevel if provided
+    if (gradeLevel) {
+      query.gradeLevel = gradeLevel;
+    }
+    
+    const classes = await ClassModel.find(query)
       .populate({
         path: 'teacher',
         model: 'Teacher',
@@ -139,19 +153,80 @@ export const getAllClasses = async (req, res) => {
           select: 'name'
         }
       })
-      .select('name description enrollmentCode teacher');
+      .select('name description enrollmentCode teacher gradeLevel');
+      
     const formattedClasses = classes.map(klass => {
       return {
         _id: klass._id,
         name: klass.name,
         description: klass.description,
         enrollmentCode: klass.enrollmentCode,
+        gradeLevel: klass.gradeLevel,
         teacherName: klass.teacher?.userId?.name || 'Instructor'
       };
     });
     res.status(200).json(formattedClasses);
   } catch (error) {
     console.error("Error fetching all classes:", error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Get classes by grade level (for discovery, excluding enrolled classes)
+// @route   GET /student/classes-by-grade?gradeLevel=Grade 5
+// @access  Private (for students)
+export const getClassesByGradeLevel = async (req, res) => {
+  try {
+    const { gradeLevel } = req.query;
+    
+    if (!gradeLevel) {
+      return res.status(400).json({ msg: "Grade level is required" });
+    }
+    
+    // Validate gradeLevel
+    const validGradeLevels = [
+      "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
+      "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10",
+      "Grade 11", "Grade 12", "College"
+    ];
+    if (!validGradeLevels.includes(gradeLevel)) {
+      return res.status(400).json({ msg: "Invalid grade level" });
+    }
+    
+    // Find student to get enrolled classes
+    const student = await Student.findOne({ userId: req.user._id });
+    const enrolledClassIds = student?.enrolledClasses || [];
+    
+    // Find classes matching gradeLevel that student is NOT enrolled in
+    const classes = await ClassModel.find({
+      gradeLevel: gradeLevel,
+      _id: { $nin: enrolledClassIds }
+    })
+      .populate({
+        path: 'teacher',
+        model: 'Teacher',
+        populate: {
+          path: 'userId',
+          model: 'User',
+          select: 'name'
+        }
+      })
+      .select('name description enrollmentCode teacher gradeLevel');
+    
+    const formattedClasses = classes.map(klass => {
+      return {
+        _id: klass._id,
+        name: klass.name,
+        description: klass.description,
+        enrollmentCode: klass.enrollmentCode,
+        gradeLevel: klass.gradeLevel,
+        teacherName: klass.teacher?.userId?.name || 'Instructor'
+      };
+    });
+    
+    res.status(200).json({ classes: formattedClasses, gradeLevel });
+  } catch (error) {
+    console.error("Error fetching classes by grade level:", error);
     res.status(500).json({ msg: 'Server error' });
   }
 };
@@ -175,10 +250,15 @@ export const getClassContent = async (req, res) => {
         model: 'Teacher',
         populate: { path: 'userId', model: 'User', select: 'name' }
       })
-      .select('name description teacher');
+      .select('name description teacher gradeLevel');
 
     if (!klass) {
       return res.status(404).json({ msg: 'Class not found' });
+    }
+
+    // Verify student is enrolled in this class
+    if (!student || !student.enrolledClasses.some(id => id.toString() === classId)) {
+      return res.status(403).json({ msg: 'You are not enrolled in this class' });
     }
 
     // Fetch materials and assignments in parallel
@@ -223,6 +303,7 @@ export const getClassContent = async (req, res) => {
         _id: klass._id,
         name: klass.name,
         description: klass.description,
+        gradeLevel: klass.gradeLevel,
         teacherName: klass.teacher?.userId?.name || 'Instructor',
       },
       content: processedContent // Single array with all content
@@ -253,5 +334,99 @@ export const markMaterialComplete = async (req, res) => {
   } catch (error) {
     console.error("Error marking material complete:", error);
     res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Get dashboard overview for student (based on enrolled classes only)
+// @route   GET /student/dashboard
+// @access  Private (for students)
+export const getDashboardOverview = async (req, res) => {
+  try {
+    // Find the Student profile using req.user._id
+    const student = await Student.findOne({ userId: req.user._id });
+    if (!student) {
+      return res.status(404).json({ msg: "Student profile not found" });
+    }
+
+    // Retrieve all Classes the student is enrolled in
+    const studentClasses = await ClassModel.find({ 
+      _id: { $in: student.enrolledClasses } 
+    })
+      .populate('teacher', 'userId')
+      .populate('enrolledStudents')
+      .select('name description gradeLevel teacher enrolledStudents');
+
+    const studentClassIds = studentClasses.map(klass => klass._id);
+
+    // Retrieve all Assignments relevant to these classes
+    const assignments = await Assignment.find({ 
+      classId: { $in: studentClassIds } 
+    }).lean();
+
+    // Get all submissions for this student
+    const submissions = await Submission.find({ 
+      studentId: req.user._id,
+      assignmentId: { $in: assignments.map(a => a._id) }
+    }).lean();
+
+    // Calculate Metrics
+    const assignmentIds = assignments.map(a => a._id.toString());
+    const submittedAssignmentIds = new Set(submissions.map(s => s.assignmentId.toString()));
+    
+    // Pending Assignments: Count assignments where student has not submitted, or submission is not yet graded
+    const pendingAssignments = assignments.filter(assignment => {
+      const submission = submissions.find(s => s.assignmentId.toString() === assignment._id.toString());
+      return !submission || submission.grade === null || submission.grade === undefined;
+    });
+
+    // Assignments Due Soon: Filter assignments by dueDate (within 7 days)
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const assignmentsDueSoon = assignments.filter(assignment => {
+      if (!assignment.dueDate) return false;
+      const dueDate = new Date(assignment.dueDate);
+      return dueDate >= now && dueDate <= sevenDaysFromNow;
+    });
+
+    // Overall Progress/Grades: Summarize grades from submissions
+    const gradedSubmissions = submissions.filter(s => s.grade !== null && s.grade !== undefined);
+    const totalAssignments = assignments.length;
+    const completedAssignments = gradedSubmissions.length;
+    const overallProgress = totalAssignments > 0 
+      ? Math.round((completedAssignments / totalAssignments) * 100) 
+      : 0;
+    
+    // Calculate average grade
+    const averageGrade = gradedSubmissions.length > 0
+      ? Math.round(gradedSubmissions.reduce((sum, s) => sum + (s.grade || 0), 0) / gradedSubmissions.length)
+      : 0;
+
+    // Return active classes with gradeLevel and metrics
+    const activeClasses = studentClasses.map(klass => ({
+      _id: klass._id,
+      name: klass.name,
+      description: klass.description,
+      gradeLevel: klass.gradeLevel,
+      studentCount: klass.enrolledStudents?.length || 0,
+    }));
+
+    res.json({
+      pendingAssignments: pendingAssignments.length,
+      assignmentsDueSoon: assignmentsDueSoon.length,
+      overallProgress,
+      averageGrade,
+      totalAssignments,
+      completedAssignments,
+      activeClasses,
+      assignments: assignments.slice(0, 5).map(a => ({
+        _id: a._id,
+        title: a.title,
+        dueDate: a.dueDate,
+        classId: a.classId
+      }))
+    });
+  } catch (error) {
+    console.error("Error fetching student dashboard overview:", error);
+    res.status(500).json({ msg: "Server error" });
   }
 };

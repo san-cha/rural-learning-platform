@@ -8,23 +8,31 @@ import { useNavigate } from "react-router-dom";
 const TeacherCreateClass = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const gradeLevels = [
+    "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
+    "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10",
+    "Grade 11", "Grade 12", "College"
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
-      const res = await axios.post('/teacher/classes', { name, description });
+      const res = await axios.post('/teacher/classes', { name, description, gradeLevel });
       if (res?.data?.class) {
         setName("");
         setDescription("");
+        setGradeLevel("");
         navigate('/teacher-dashboard');
       }
     } catch (e) {
-      setError('Failed to create class');
+      setError(e?.response?.data?.msg || 'Failed to create class');
     } finally {
       setLoading(false);
     }
@@ -42,7 +50,21 @@ const TeacherCreateClass = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700">Class Name</label>
-                  <input value={name} onChange={(e) => setName(e.target.value)} required className="mt-1 w-full border rounded-md px-3 py-2" placeholder="e.g., Grade 6 - Science" />
+                  <input value={name} onChange={(e) => setName(e.target.value)} required className="mt-1 w-full border rounded-md px-3 py-2" placeholder="e.g., Science Class A" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Grade Level <span className="text-red-500">*</span></label>
+                  <select 
+                    value={gradeLevel} 
+                    onChange={(e) => setGradeLevel(e.target.value)} 
+                    required 
+                    className="mt-1 w-full border rounded-md px-3 py-2"
+                  >
+                    <option value="">Select a grade level</option>
+                    {gradeLevels.map((level) => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700">Description</label>

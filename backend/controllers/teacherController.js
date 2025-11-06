@@ -41,11 +41,12 @@ export const getDashboardOverview = async (req, res) => {
       0
     );
 
-    // Active Classes List: Return classes with student count
+    // Active Classes List: Return classes with student count and gradeLevel
     const activeClasses = classes.map((klass) => ({
       _id: klass._id,
       name: klass.name,
       description: klass.description,
+      gradeLevel: klass.gradeLevel,
       studentCount: klass.enrolledStudents?.length || 0,
     }));
 
@@ -165,9 +166,22 @@ export const getDashboardData = async (req, res) => {
  */
 export const createClass = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, gradeLevel } = req.body;
     if (!name) {
       return res.status(400).json({ msg: "Class name is required" });
+    }
+    if (!gradeLevel) {
+      return res.status(400).json({ msg: "Grade level is required" });
+    }
+
+    // Validate gradeLevel enum
+    const validGradeLevels = [
+      "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5",
+      "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10",
+      "Grade 11", "Grade 12", "College"
+    ];
+    if (!validGradeLevels.includes(gradeLevel)) {
+      return res.status(400).json({ msg: "Invalid grade level. Must be one of: " + validGradeLevels.join(", ") });
     }
 
     let teacher = await Teacher.findOne({ userId: req.user._id });
@@ -212,6 +226,7 @@ export const createClass = async (req, res) => {
       teacher: teacher._id,
       enrolledStudents: [],
       enrollmentCode,
+      gradeLevel,
     });
 
     teacher.classes.push(newClass._id);
