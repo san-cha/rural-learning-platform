@@ -19,40 +19,65 @@ router.get("/classes", protect, async (req, res) => {
   }
 });
 
-export default router;
-
-// Enroll current student into a class by classId
+// Enroll current student into a class by enrollmentCode
 router.post("/enroll", protect, async (req, res) => {
   try {
-    const { classId } = req.body;
-    if (!classId) return res.status(400).json({ msg: "classId is required" });
+    const { enrollmentCode } = req.body;
+    
+    if (!enrollmentCode) {
+      return res.status(400).json({ msg: "Enrollment code is required" });
+    }
 
-    const klass = await ClassModel.findById(classId);
-    if (!klass) return res.status(404).json({ msg: "Class not found" });
+    // Find the class using the enrollment code
+    const klass = await ClassModel.findOne({ enrollmentCode });
+    
+    if (!klass) {
+      return res.status(404).json({ msg: "Class not found. Please check the enrollment code." });
+    }
 
+    // Find or create student profile
     let student = await Student.findOne({ userId: req.user._id });
     if (!student) {
       student = await Student.create({ userId: req.user._id, enrolledClasses: [] });
     }
 
-    // Add if not present
-    const sId = student._id;
-    const alreadyInStudent = student.enrolledClasses.some((id) => id.toString() === classId);
-    const alreadyInClass = klass.enrolledStudents.some((id) => id.toString() === sId.toString());
-    if (!alreadyInStudent) student.enrolledClasses.push(classId);
-    if (!alreadyInClass) klass.enrolledStudents.push(sId);
+    // Check if student is already enrolled
+    const studentId = student._id;
+    const alreadyInStudent = student.enrolledClasses.some(
+      (id) => id.toString() === klass._id.toString()
+    );
+    const alreadyInClass = klass.enrolledStudents.some(
+      (id) => id.toString() === studentId.toString()
+    );
+
+    if (alreadyInStudent || alreadyInClass) {
+      return res.status(400).json({ msg: "You are already enrolled in this class" });
+    }
+
+    // Add student to class and class to student
+    student.enrolledClasses.push(klass._id);
+    klass.enrolledStudents.push(studentId);
 
     await student.save();
     await klass.save();
 
+    // Populate and return updated student data
     const populated = await Student.findById(student._id).populate({
       path: "enrolledClasses",
-      populate: [{ path: "teacher" }, { path: "enrolledStudents" }],
+      populate: [{ path: "teacher", select: "userId" }, { path: "enrolledStudents" }],
     });
-    res.status(200).json({ success: true, student: populated });
+
+    res.status(200).json({ 
+      success: true, 
+      msg: "Successfully enrolled in class",
+      student: populated 
+    });
   } catch (e) {
+    console.error("Error enrolling student:", e);
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+export default router;
 
 

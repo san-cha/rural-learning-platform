@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/Card.jsx";
 import Button from "../../components/ui/Button.jsx";
 import axios from "../../api/axiosInstance.jsx";
-import { PlusCircle, FileText, Users, Calendar, BookOpen, Upload } from "lucide-react";
+import { PlusCircle, FileText, Users, Calendar, BookOpen, Upload, Copy, Check } from "lucide-react";
 import VideoPlayer from "../../components/VideoPlayer.jsx";
 
 const TeacherClassDetail = () => {
@@ -89,6 +89,30 @@ const TeacherClassDetail = () => {
 
       {!loading && classData && (
         <div className="space-y-6">
+          {/* Enrollment Code Card */}
+          {classData.enrollmentCode && (
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" /> Enrollment Code
+                </CardTitle>
+                <CardDescription>
+                  Share this code with students so they can enroll in this class
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 bg-white rounded-lg border-2 border-blue-300 px-4 py-3">
+                    <code className="text-2xl font-bold text-blue-600 tracking-wider">
+                      {classData.enrollmentCode}
+                    </code>
+                  </div>
+                  <EnrollmentCodeCopyButton code={classData.enrollmentCode} />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           <div className="grid gap-6 md:grid-cols-2">
             {/* Student Roster */}
             <Card>
@@ -626,6 +650,40 @@ const MaterialUploadForm = ({ classId, onSuccess, onCancel }) => {
         </form>
       </CardContent>
     </Card>
+  );
+};
+
+// Enrollment Code Copy Button Component
+const EnrollmentCodeCopyButton = ({ code }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handleCopy}
+      variant="secondary"
+      className="flex items-center gap-2"
+      title="Copy enrollment code"
+    >
+      {copied ? (
+        <>
+          <Check className="h-4 w-4" /> Copied!
+        </>
+      ) : (
+        <>
+          <Copy className="h-4 w-4" /> Copy
+        </>
+      )}
+    </Button>
   );
 };
 
