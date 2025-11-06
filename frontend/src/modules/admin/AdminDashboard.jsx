@@ -27,6 +27,7 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
   </div>
 );
 
+
 const OverviewSection = ({ metrics }) => {
   const cards = metrics || [];
   return (
@@ -245,55 +246,86 @@ const TeacherManagementSection = ({ teachers, addNewTeacher }) => {
   );
 };
 
-const UsersSection = ({ users, teachers, addNewTeacher }) => {
+// Add this definition in the COMPONENTS section near the top of AdminDashboard.jsx
+const TechnicianDirectory = ({ technicians }) => (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+        <h3 className="text-xl font-semibold mb-4 text-gray-700">Technician Directory ({technicians.length})</h3>
+        <ul className="mt-4 space-y-2">
+            {technicians.length === 0 ? (
+                <li className="text-gray-500">No technicians found.</li>
+            ) : (
+                technicians.map(t => (
+                    <li key={t.id} className="text-sm">{t.name} - Status: {t.status}</li>
+                ))
+            )}
+        </ul>
+    </div>
+);
+
+// Now, the UsersSection component (around line 348) can safely call it.
+
+const UsersSection = ({ learners, teachers, technicians, addNewTeacher }) => {
   const [activeSubTab, setActiveSubTab] = useState('learners');
-  const isUsersArray = Array.isArray(users);
   const isTeachersArray = Array.isArray(teachers);
 
   const renderSubContent = () => {
-    if (activeSubTab === 'learners') {
-      return (
-        <div className="bg-white rounded-xl shadow-lg p-4 overflow-x-auto">
-          <h3 className="text-xl font-semibold mb-4 text-gray-700">Learner Directory</h3>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Learner Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Primary Device</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Language</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {(isUsersArray ? users : []).map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user?.name || 'Unknown'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Smartphone className="w-4 h-4 mr-2 text-gray-400" />
-                      {user?.device || '—'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user?.lastLogin || '—'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user?.language || '—'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user?.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {user?.status || 'Inactive'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    } else {
-      return <TeacherManagementSection teachers={isTeachersArray ? teachers : []} addNewTeacher={addNewTeacher} />;
-    }
-  };
+    // Note: You must ensure 'learners', 'teachers', and 'technicians' state arrays are defined
+    // and populated by the filtering logic in your useEffect.
+
+    if (activeSubTab === 'learners') {
+      return (
+        <div className="bg-white rounded-xl shadow-lg p-4 overflow-x-auto">
+          <h3 className="text-xl font-semibold mb-4 text-gray-700">Learner Directory</h3>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Learner Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {/*  FIX: Changed 'users' to the filtered 'learners' array */}
+              {/* NOTE: You need to ensure 'learners' is used here, and replace 'isUsersArray' 
+                 with an appropriate check like 'Array.isArray(learners)' or use a dedicated 'isLearnersArray' state/check. 
+                 I've used 'Array.isArray(learners)' as the safer option here. */}
+              {(Array.isArray(learners) ? learners : []).map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50">
+                  {/* Learner Name */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user?.name || 'Unknown'}</td>
+
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      user?.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {user?.status || 'Inactive'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    else if (activeSubTab === 'teachers') {
+      // ✅ Correct - uses the dedicated 'teachers' array
+      return <TeacherManagementSection teachers={Array.isArray(teachers) ? teachers : []} addNewTeacher={addNewTeacher} />;
+    }
+
+    else if (activeSubTab === 'technicians') {
+      return (
+        <TechnicianDirectory 
+           // ✅ Correct - uses the dedicated 'technicians' array
+           technicians={Array.isArray(technicians) ? technicians : []} 
+           // Pass any technician-specific handlers here
+        />
+      );
+    }
+
+    return <div>Select a sub-tab.</div>;
+
+};
 
   const SubTab = ({ name, id }) => (
     <button
@@ -308,24 +340,39 @@ const UsersSection = ({ users, teachers, addNewTeacher }) => {
     </button>
   );
 
-  return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
-      
-      <div className="flex border-b border-gray-200 -mb-4">
-        <SubTab name="Learners (Students)" id="learners" />
-        <SubTab name="Teachers" id="teachers" />
-      </div>
+  <div className="flex space-x-1 border-b border-gray-200">
+    
+    {/* 1. Learners (Students) Tab */}
+    <SubTab name="Learners (Students)" id="learners" />
+    
+    {/* 2. Teachers Tab */}
+    <SubTab name="Teachers" id="teachers" />
+    
+    {/* 3. 🆕 Technicians Tab */}
+    <SubTab name="Technicians" id="technicians" /> 
+    
+  </div>
 
-      <div className="pt-4">
-        {renderSubContent()}
-      </div>
-    </div>
-  );
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-800">User Management</h2>
+      
+      <div className="flex border-b border-gray-200 -mb-4">
+        <SubTab name="Learners (Students)" id="learners" />
+        <SubTab name="Teachers" id="teachers" />
+        <SubTab name="Technicians" id="technicians" /> 
+      </div>
+
+      <div className="pt-4">
+        {renderSubContent()}
+      </div>
+    </div>
+  );
 };
 
 
-const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics }) => {  const [activeTab, setActiveTab] = useState('overview');
+const CoreDashboard = ({ data, learners, teachers, technicians, content, addNewTeacher, metrics }) => {
+  const [activeTab, setActiveTab] = useState('overview');
   const { logout } = useAuth();
 
   const navigation = useMemo(() => [
@@ -333,7 +380,6 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics 
     { name: 'Content', href: 'content', icon: BookOpen, current: activeTab === 'content' },
     { name: 'Users', href: 'users', icon: Users, current: activeTab === 'users' },
     { name: 'Support', href: 'support', icon: MessageSquare, current: activeTab === 'support' },
-    { name: 'Settings', href: 'settings', icon: Settings, current: activeTab === 'settings' },
   ], [activeTab]);
 
   const renderContent = () => {
@@ -345,7 +391,14 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics 
         return <ContentSection content={content} />;
         
       case 'users':
-        return <UsersSection users={users} teachers={teachers} addNewTeacher={addNewTeacher} />;
+        return (
+            <UsersSection 
+                learners={learners} // 🚨 PASS THIS
+                teachers={teachers} 
+                technicians={technicians} // 🚨 PASS THIS
+                addNewTeacher={addNewTeacher} 
+            />
+        );
         
       case 'support': // <-- This is the ONE, merged, working case
         return (
@@ -356,7 +409,6 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics 
                     <h2 className="text-2xl font-bold text-gray-800 mb-4">Support & Community</h2>
                     {/* Ensure safe access using optional chaining (data?.supportTicketsOpen) */}
                     <p className="text-xl text-blue-600 font-semibold mb-2">
-                        {data?.supportTicketsOpen?.toLocaleString() || 0} Open Tickets
                     </p>
                     <p className="text-gray-600">This section shows live support queue and community login data.</p>
                 </div>
@@ -368,13 +420,6 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics 
             </div>
         );
         
-      case 'settings':
-        return (
-          <div className="p-6 bg-white rounded-xl shadow-lg">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Platform Settings</h2>
-            <p className="text-gray-600">Manage localization settings, API keys, and low-bandwidth mode configurations here.</p>
-          </div>
-        );
         
       default:
         return <OverviewSection data={data} />;
@@ -462,10 +507,12 @@ const CoreDashboard = ({ data, users, teachers, content, addNewTeacher, metrics 
 
 
 const AdminDashboard = () => {
+  const [someState, setSomeState] = useState(null);
   const [teachers, setTeachers] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [contentModules, setContentModules] = useState([]);
 
   // CRITICAL: Initialize ALL dynamic stats here
   const [stats, setStats] = useState({ 
@@ -474,7 +521,10 @@ const AdminDashboard = () => {
     technicians: 0, 
     supportTicketsOpen: 0, 
     communityHubLogins: 0 
-  }); 
+  });
+
+  const [learners, setLearners] = useState([]); 
+  const [technicians, setTechnicians] = useState([]);
 
   const addNewTeacher = (newTeacherData) => {
     setTeachers(prev => [...prev, newTeacherData]);
@@ -529,17 +579,81 @@ const AdminDashboard = () => {
         // Set the fetched stats, merge with defaults for safety
         setStats(prev => ({ ...prev, ...s.data }));
 
-        // Process users and teachers as before
-        setUsers(Array.isArray(u?.data?.users) ? u.data.users : []);
-        const normalized = (Array.isArray(t?.data?.teachers) ? t.data.teachers : []).map((te) => ({
-          id: te?._id,
-          name: te?.userId?.name || 'Unknown',
-          centerCode: '',
-          assignedClasses: `${(te?.classes?.length || 0)} classes`,
-          subjects: '',
-          status: 'Active'
-        }));
-        setTeachers(normalized);
+        // Corrected fetchContentModules function structure:
+
+      const fetchContentModules = async () => {
+      try {
+          // 🎯 Use axios.get for consistency with /admin/users and /admin/stats
+          // This ensures the URL prefix and Authorization headers are handled correctly.
+          const response = await axios.get('/admin/content'); 
+          
+          // Axios response data is automatically parsed and stored in the .data property
+          const data = response.data; 
+          
+          if (data.success && Array.isArray(data.modules)) {
+              const normalizedModules = data.modules.map(mod => ({
+                  id: mod._id,
+                  title: mod.title || 'Untitled Module',
+                  localization: mod.localizationStatus || 'English Only',
+                  downloads: mod.offlineDownloads 
+                              ? `${(mod.offlineDownloads / 1000).toFixed(1)}K` 
+                              : '0K',
+                  status: mod.status || 'Draft',
+              }));
+              setContentModules(normalizedModules);
+          } else {
+              console.error("Failed to fetch modules:", data.message);
+          }
+      } catch (error) {
+          // Now you can properly check for 401/404 errors here
+          console.error("Network error fetching content:", error);
+      }
+  };    
+
+      // Ensure you call this new function inside your useEffect:
+      fetchContentModules();
+
+        // ✅ NEW FILTERED SECTION ✅
+
+        // 1. Get raw users data from the /admin/users endpoint response (u)
+        const rawUsers = Array.isArray(u?.data?.users) ? u.data.users : [];
+
+        // 2. Filter raw data into three separate role arrays:
+
+        // Filter Learners (Students)
+        const learnersData = rawUsers
+            .filter(user => user.role === 'student' || user.role === 'learner')
+            .map(u => ({
+                id: u?._id,
+                name: u?.name || 'Unknown Learner',
+                status: u?.isActive ? 'Active' : 'Inactive',
+                // If you need more fields, map them here:
+                // device: u?.deviceType || '—', 
+                // lastActivity: u?.lastLogin || '—',
+            }));
+        setLearners(learnersData); // Assumes you defined: const [learners, setLearners] = useState([]);
+
+        // Filter Technicians
+        const techniciansData = rawUsers
+            .filter(user => user.role === 'technician')
+            .map(u => ({
+                id: u?._id,
+                name: u?.name || 'Unknown Technician',
+                status: u?.isActive ? 'Active' : 'Inactive',
+            }));
+        setTechnicians(techniciansData); // Assumes you defined: const [technicians, setTechnicians] = useState([]);
+
+        // 3. Process Teachers (using the dedicated /admin/teachers endpoint response (t))
+        const normalizedTeachers = (Array.isArray(t?.data?.teachers) ? t.data.teachers : []).map((te) => ({
+            id: te?._id,
+            name: te?.userId?.name || 'Unknown',
+            centerCode: '',
+            assignedClasses: `${(te?.classes?.length || 0)} classes`,
+            subjects: '',
+            status: 'Active'
+        }));
+        setTeachers(normalizedTeachers);
+
       } catch (e) {
         if (!isActive) return;
         setError('Failed to load admin data'); 
@@ -569,10 +683,13 @@ const contentData = mockContent;
       {/* You should ensure 'contentData' is defined before this. */}
       {!loading && (
         <CoreDashboard
-          users={(Array.isArray(users) ? users : []).map(u => ({ id: u?._id, name: u?.name || 'Unknown', device: '', lastLogin: '', status: 'Active', language: '' }))}
+          users={(Array.isArray(users) ? users : []).map(u => ({ id: u?._id, name: u?.name || 'Unknown', status: 'Active' }))}
           teachers={Array.isArray(teachers) ? teachers : []}
+          learners={Array.isArray(learners) ? learners : []}
+          technicians={Array.isArray(technicians) ? technicians : []}
           content={contentData}
           addNewTeacher={addNewTeacher}
+          contentModules={contentModules}
           metrics={metrics} // <--- CRITICAL: Pass the metrics array for the Overview cards!
           // We need to pass the stats object for the Support tab as well
           stats={stats}
