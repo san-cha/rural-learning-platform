@@ -28,6 +28,7 @@ import Contact from "./pages/Contact.jsx";
 import ErrorPage from "./pages/Error.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import TechDashboard from './modules/technician/TechDashboard';
+import AssessmentSubmission from './modules/student/AssessmentSubmission';
 
 // NOTE: keep this link tag in index.html or public/index.html for correct HTML placement
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
@@ -48,6 +49,7 @@ function App() {
           <Route path="/assessment/:id" element={<Assessment />} />
           <Route path="/student-courses" element={<StudentCourses />} />
           <Route path="/find-classes" element={<FindClasses />} />
+          <Route path="/assessment-submission/:assessmentId" element={<AssessmentSubmission />} />
           <Route path="/student-notifications" element={<StudentNotifications />} />
           <Route path="/student-enroll" element={<StudentEnroll />} />
 

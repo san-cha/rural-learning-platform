@@ -142,7 +142,7 @@ const StudentDashboard = () => {
               <Link to="/find-classes">
                 <Button 
                   variant="secondary" 
-                  className="bg-white text-blue-600 font-bold text-lg px-8 py-6 shadow-md hover:bg-gray-100 transform hover:-translate-y-0.5 transition-all"
+                  className="bg-white !text-blue-600 font-bold text-lg px-8 py-6 shadow-md hover:bg-gray-100 transform hover:-translate-y-0.5 transition-all flex items-center justify-center"
                 >
                   <Search className="h-5 w-5 mr-2" />
                   Find a Class to Join

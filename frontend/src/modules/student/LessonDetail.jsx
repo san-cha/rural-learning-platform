@@ -1,142 +1,430 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import Header from "../../components/Header.jsx";
-import Footer from "../../components/Footer.jsx";
-import { lessons } from "../../data/courseData.js";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import axios from "../../api/axiosInstance.jsx";
+import { useAuth } from "../../contexts/AuthContext.jsx";
+import Button from "../../components/ui/Button.jsx";
+import { 
+  BookOpen, 
+  PlayCircle, 
+  FileText, 
+  CheckCircle, 
+  ArrowLeft,
+  ArrowRight,
+  ClipboardCheck,
+  Circle,
+  AlertCircle,
+  Menu,
+  X,
+  Home,
+  Loader
+} from "lucide-react";
 
-// --- Helper Components for Icons ---
-const CheckIcon = () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6 9 17l-5-5" /></svg>;
-const CircleIcon = () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="9"/></svg>;
-const ArrowRightIcon = () => <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>;
+// Helper component for material icons
+const MaterialIcon = ({ type, isCompleted }) => {
+  if (isCompleted) {
+    return <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />;
+  }
+  if (type.includes('quiz') || type.includes('assignment') || type.includes('assessment')) {
+    return <ClipboardCheck className="w-5 h-5 text-indigo-500 flex-shrink-0" />;
+  }
+  if (type.includes('video')) {
+    return <PlayCircle className="w-5 h-5 text-red-500 flex-shrink-0" />;
+  }
+  if (type.includes('reading') || type.includes('pdf')) {
+    return <FileText className="w-5 h-5 text-blue-500 flex-shrink-0" />;
+  }
+  return <Circle className="w-5 h-5 text-gray-500 flex-shrink-0" />;
+};
 
-// --- Main Component ---
 export default function LessonDetail() {
-  const { id } = useParams();
+  const { id: classId } = useParams(); 
   const navigate = useNavigate();
-  const [language, setLanguage] = useState("en");
-  const [currentStep, setCurrentStep] = useState(1); // 1: Details, 2: Transcript, 3: Quiz
+  const { user } = useAuth();
 
-  const lesson = lessons.find((l) => l.id === id);
+  // Data states
+  const [classDetails, setClassDetails] = useState(null);
+  const [allClassContent, setAllClassContent] = useState([]); 
+  const [completedMap, setCompletedMap] = useState(new Set());
+  
+  // UI states
+  const [selectedMaterial, setSelectedMaterial] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null); 
+  const [markCompleteLoading, setMarkCompleteLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); 
 
-  if (!lesson) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 text-center p-4">
-        <h1 className="text-4xl font-bold text-red-500 mb-4">Lesson Not Found</h1>
-        <button onClick={() => navigate("/student-dashboard")} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition transform hover:-translate-y-1">
-          Go Back to Dashboard
+  // Fetch class content on mount
+  useEffect(() => {
+    const fetchClassContent = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const res = await axios.get(`/student/class/${classId}/content`);
+        const { classDetails, content } = res.data;
+
+        setClassDetails(classDetails);
+
+        // Track completed items
+        const completedIdSet = new Set();
+        content.forEach(item => {
+          if (item.isCompleted) {
+            completedIdSet.add(item._id);
+          }
+        });
+
+        setAllClassContent(content || []);
+        setCompletedMap(completedIdSet);
+
+        // Auto-select first item
+        if (content && content.length > 0) {
+          setSelectedMaterial(content[0]);
+        }
+        
+      } catch (err) {
+        console.error("Error fetching class content:", err);
+        setError("Could not load class content. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchClassContent();
+  }, [classId]);
+
+  // Get next material in the list
+  const getNextMaterial = () => {
+    if (!selectedMaterial) return null;
+    
+    const currentIndex = allClassContent.findIndex(m => m._id === selectedMaterial._id);
+    if (currentIndex >= 0 && currentIndex < allClassContent.length - 1) {
+      return allClassContent[currentIndex + 1];
+    }
+    
+    return null;
+  };
+
+  // Mark current material as complete
+  const handleMarkComplete = async () => {
+    if (!selectedMaterial) return;
+
+    setMarkCompleteLoading(true);
+    setError(null);
+
+    try {
+      await axios.post(`/student/material/${selectedMaterial._id}/complete`);
+      
+      // Update UI
+      setCompletedMap(prev => new Set(prev).add(selectedMaterial._id));
+
+      // Auto-advance
+      const nextMaterial = getNextMaterial();
+      if (nextMaterial) {
+        setSelectedMaterial(nextMaterial);
+      }
+      
+    } catch (err) {
+      console.error("Error marking complete:", err);
+      setError("Could not save your progress. Please try again."); 
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      setMarkCompleteLoading(false);
+    }
+  };
+
+  // Sidebar content component
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full bg-white">
+      <div className="flex items-center justify-between h-16 border-b border-gray-200 px-4 flex-shrink-0">
+        <div className="flex items-center gap-2 font-semibold">
+           <BookOpen className="w-5 h-5 text-blue-600" />
+           <span className="text-lg text-gray-800 truncate">
+             {classDetails?.name || 'Class Content'}
+           </span>
+        </div>
+        <button 
+          className="lg:hidden p-1 text-gray-500 hover:text-gray-800"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <X className="w-6 h-6" />
         </button>
+      </div>
+      <nav className="flex-1 py-4 px-4 space-y-4 overflow-y-auto">
+        {allClassContent.length === 0 ? (
+          <div className="text-center text-gray-500 p-4">
+            No content has been added to this class yet.
+          </div>
+        ) : (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
+              All Class Content
+            </h3>
+            <div className="space-y-1">
+              {allClassContent.map((material) => {
+                const isSelected = selectedMaterial?._id === material._id;
+                const isCompleted = completedMap.has(material._id);
+
+                return (
+                  <button
+                    key={material._id}
+                    onClick={() => {
+                      setSelectedMaterial(material);
+                      setSidebarOpen(false); 
+                    }}
+                    className={`flex items-start w-full gap-3 rounded-lg px-3 py-3 text-left transition-all
+                      ${isSelected 
+                        ? 'bg-blue-100 text-blue-700 font-semibold shadow-inner' 
+                        : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                  >
+                    <div className="pt-0.5">
+                      <MaterialIcon type={material.type} isCompleted={isCompleted} />
+                    </div>
+                    <span className="leading-tight">{material.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </nav>
+    </div>
+  );
+
+  // Main content area component
+  const MainContent = () => {
+    if (!selectedMaterial) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+          <BookOpen className="w-16 h-16 text-gray-300 mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-700">Welcome to your class!</h2>
+          <p className="text-gray-500 mt-2">Select a lesson from the sidebar to get started.</p>
+        </div>
+      );
+    }
+
+    const { type = 'unknown', title, content, videoUrl, materialUrl, _id } = selectedMaterial;
+    const isCompleted = completedMap.has(_id);
+    const nextMaterial = getNextMaterial();
+    
+    const isQuiz = type.includes('quiz') || type.includes('assignment') || type.includes('assessment');
+
+    return (
+      <div className="p-4 sm:p-8 flex-grow flex flex-col max-w-4xl mx-auto w-full h-full">
+        
+        {error && !isLoading && (
+            <div className="flex items-center gap-3 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg mb-4 shadow-sm">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium text-sm">{error}</span>
+            </div>
+        )}
+        
+        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6 flex-shrink-0">{title}</h1>
+
+        <div className="bg-white rounded-2xl shadow-xl mb-6 flex-grow overflow-y-auto">
+          
+          {/* Video Content */}
+          {type.includes('video') && (
+            <div className="w-full">
+              <iframe 
+                src={videoUrl || "https://www.youtube.com/embed/dQw4w9WgXcQ"} 
+                title={title} 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowFullScreen
+                className="w-full h-[400px] sm:h-[500px] rounded-t-2xl" 
+              ></iframe>
+              {content && (
+                  <div className="p-8 prose prose-lg max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: content }} />
+                  </div>
+              )}
+            </div>
+          )}
+          
+          {/* Reading/PDF Content */}
+          {(type.includes('reading') || type.includes('pdf')) && (
+            <div className="p-8 prose prose-lg max-w-none">
+                <h2>{type.includes('pdf') ? 'Document View' : 'Reading Content'}</h2>
+                <div dangerouslySetInnerHTML={{ 
+                    __html: content || '<p class="text-gray-500 italic">No detailed content provided for this material.</p>' 
+                }} />
+                
+                {materialUrl && (
+                    <div className="mt-6 border-2 border-gray-300 rounded-lg overflow-hidden">
+                        <iframe 
+                            src={materialUrl}
+                            title={title}
+                            className="w-full h-[600px]"
+                            frameBorder="0"
+                        />
+                        <p className="p-4 bg-gray-50 border-t">
+                            <a href={materialUrl} target="_blank" rel="noopener noreferrer" 
+                               className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-2">
+                                <FileText className="w-4 h-4" /> Open in New Tab
+                            </a>
+                        </p>
+                    </div>
+                )}
+            </div>
+          )}
+          
+          {/* Quiz/Assignment View */}
+          {isQuiz && (
+            <div className="p-8 flex flex-col items-center justify-center text-center min-h-[50vh]">
+              <ClipboardCheck className="w-16 h-16 text-indigo-500 mb-4" />
+              <h2 className="text-2xl font-semibold mb-2">{title}</h2>
+              <p className="text-gray-600 mb-6 max-w-md">
+                {content || `This is a ${type.replace('-', ' ')}. Click below to start or view your submission.`}
+              </p>
+              <Button 
+                onClick={() => navigate(`/assessment-submission/${_id}`)} 
+                className="bg-indigo-600 text-white font-bold py-3 px-8 text-lg hover:bg-indigo-700 transition-colors shadow-md"
+              >
+                Start / View {isCompleted ? 'Grade' : 'Assessment'}
+              </Button>
+            </div>
+          )}
+          
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-lg mt-auto flex-shrink-0">
+          <div className="flex-1">
+            {isCompleted && (
+              <div className="flex items-center gap-2 text-green-600 font-semibold">
+                <CheckCircle className="w-5 h-5" />
+                Completed
+              </div>
+            )}
+          </div>
+          <div className="flex gap-3">
+            {!isQuiz && (
+              <Button
+                onClick={handleMarkComplete}
+                disabled={isCompleted || markCompleteLoading}
+                className={`font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-all shadow-md
+                  ${isCompleted 
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-200' 
+                    : 'bg-green-600 text-white hover:bg-green-700'}`
+                }
+              >
+                {markCompleteLoading 
+                  ? 'Saving...' 
+                  : (isCompleted ? 'Completed' : 'Mark as Complete')
+                }
+              </Button>
+            )}
+            
+            {nextMaterial && (
+              <Button
+                onClick={() => {
+                  if (!isQuiz && !isCompleted) {
+                    handleMarkComplete(); 
+                  } else {
+                    setSelectedMaterial(nextMaterial);
+                  }
+                }}
+                disabled={markCompleteLoading}
+                className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-md"
+              >
+                <span>Continue</span>
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            )}
+            {!nextMaterial && isCompleted && (
+                <div className="text-gray-500 flex items-center px-4 font-medium">
+                    You've finished all class content!
+                </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+  // Main render
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100">
+        <Loader className="w-12 h-12 text-blue-500 animate-spin mb-4" />
+        <h1 className="text-2xl font-semibold text-gray-700">Loading Your Classroom...</h1>
       </div>
     );
   }
 
-  const handleNextStep = () => {
-    if (currentStep === 3) {
-      navigate(`/assessment/${lesson.id}`);
-    } else {
-      setCurrentStep(prev => prev + 1);
-    }
-  };
-
-  const nextStepText = {
-    1: "View Transcript",
-    2: "Start Quiz",
-    3: "Take the Quiz Now"
-  };
-
-  const LessonStep = ({ step, title, currentStep, setCurrentStep }) => {
-    const isActive = step === currentStep;
-    const isCompleted = step < currentStep;
+  if (error && !classDetails) {
     return (
-      <button onClick={() => setCurrentStep(step)} className={`flex items-start text-left w-full p-4 rounded-lg transition ${isActive ? 'bg-blue-100' : 'hover:bg-slate-100'}`}>
-        <div className={`flex items-center justify-center w-7 h-7 mr-4 rounded-full ${isCompleted ? 'bg-green-500 text-white' : isActive ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-500'}`}>
-          {isCompleted ? <CheckIcon/> : step}
-        </div>
-        <div>
-          <h4 className={`font-bold ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{title}</h4>
-          <p className="text-sm text-slate-500">{isActive ? 'Current Step' : isCompleted ? 'Completed' : 'Pending'}</p>
-        </div>
-      </button>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 text-center p-4">
+        <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
+        <h1 className="text-3xl font-bold text-red-600 mb-4">Error Loading Class</h1>
+        <p className="text-gray-600 mb-6">{error}</p>
+        <Link to="/student-dashboard">
+          <Button className="bg-blue-600 text-white px-6 py-2">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+      </div>
     );
-  };
+  }
   
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      <Header user={{ name: "Sanjana Chavan", role: "Student" }} currentLanguage={language} onLanguageChange={setLanguage} />
-
-      <main className="container mx-auto px-4 py-8 flex-grow">
-    {/* --- Dynamic Gradient Hero --- */}
-    <div className="relative bg-gradient-to-br from-blue-700 to-blue-900 text-white p-8 rounded-2xl shadow-2xl overflow-hidden mb-8">
-        <div className="relative z-10">
-            <button onClick={() => navigate('/student-dashboard')} className="font-semibold text-blue-200 hover:text-white transition mb-4">
-                &larr; Back to Dashboard
+    <div className="h-screen flex flex-col">
+      <header className="flex items-center justify-between h-16 border-b bg-white px-4 lg:px-6 sticky top-0 z-30 shadow-sm">
+        
+        <div className="flex items-center">
+            <button 
+                className="p-1 text-gray-700 hover:bg-gray-100 rounded-md lg:hidden mr-2"
+                onClick={() => setSidebarOpen(true)}
+            >
+                <Menu className="w-6 h-6" />
             </button>
-            <p className="font-semibold text-blue-300">{lesson.subject} • Grade {lesson.grade}</p>
-            <h1 className="text-4xl lg:text-5xl font-bold mt-2 mb-4">{lesson.title}</h1>
+            <h1 className="text-xl font-bold text-gray-900 truncate max-w-xs sm:max-w-md">
+                {classDetails?.name || 'Classroom'}
+            </h1>
+            <span className="hidden md:inline text-sm text-gray-500 ml-4">
+                (Taught by: <span className="font-semibold text-gray-700">{classDetails?.teacherName || 'Teacher'}</span>)
+            </span>
         </div>
-        {/* The icon element that was here has been removed */}
-    </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column: Learning Path */}
-            <div className="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg h-fit">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Your Learning Path</h3>
-                <div className="space-y-2">
-                    <LessonStep step={1} title="Lesson Details" currentStep={currentStep} setCurrentStep={setCurrentStep} />
-                    <LessonStep step={2} title="View Transcript" currentStep={currentStep} setCurrentStep={setCurrentStep} />
-                    <LessonStep step={3} title="Take The Quiz" currentStep={currentStep} setCurrentStep={setCurrentStep} />
-                </div>
-            </div>
+        <Link to="/student-dashboard">
+            <Button 
+                className="flex items-center gap-2 bg-blue-500 text-white hover:bg-blue-600 transition-colors rounded-full px-4 py-2 text-sm font-semibold shadow-md"
+            >
+                <span className="hidden sm:inline">Back to Dashboard</span>
+                <Home className="w-4 h-4" />
+            </Button>
+        </Link>
+      </header>
+      
+      <div className="flex-grow grid grid-cols-1 lg:grid-cols-4 h-[calc(100vh-4rem)]">
+        
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:block col-span-1 bg-white border-r border-gray-200 h-full overflow-y-auto">
+          <SidebarContent />
+        </aside>
 
-            {/* Right Column: Content & Actions */}
-            <div className="lg:col-span-2 space-y-8">
-                 <div className="bg-white p-8 rounded-2xl shadow-lg">
-                    {currentStep === 1 && (
-                        <div>
-                            <h3 className="text-2xl font-bold text-slate-800 mb-4">What You'll Learn</h3>
-                             <ul className="space-y-2 text-slate-600 list-disc list-inside">
-                                <li>Understand the core concepts of {lesson.subject}.</li>
-                                <li>Apply these concepts to solve practical problems.</li>
-                                <li>Build a strong foundation for future lessons.</li>
-                            </ul>
-                            <hr className="my-6" />
-                            <h3 className="text-xl font-bold text-slate-800 mb-2">Description</h3>
-                            <p className="text-slate-600 leading-relaxed">{lesson.description}</p>
-                        </div>
-                    )}
-                    {currentStep === 2 && (
-                         <div>
-                            <h3 className="text-2xl font-bold text-slate-800 mb-4">Lesson Transcript</h3>
-                            <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-slate-50 p-4 rounded-lg border max-h-96 overflow-y-auto">
-                                {lesson.transcript}
-                            </pre>
-                        </div>
-                    )}
-                    {currentStep === 3 && (
-                        <div>
-                            <h3 className="text-2xl font-bold text-slate-800 mb-4">Ready for the Quiz?</h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                You've reviewed the lesson details and the transcript. Now it's time to test your knowledge!
-                                Click the button below to start the quiz. Good luck!
-                            </p>
-                        </div>
-                    )}
-                 </div>
-                 
-                 <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-lg">
-                    <div>
-                        <p className="text-slate-500">Next Step</p>
-                        <h4 className="font-bold text-lg text-slate-800">{nextStepText[currentStep]}</h4>
-                    </div>
-                    <button onClick={handleNextStep} className="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition transform hover:-translate-y-1 hover:shadow-xl">
-                        <span>{currentStep === 3 ? "Start Quiz" : "Continue"}</span>
-                        <ArrowRightIcon/>
-                    </button>
-                 </div>
-            </div>
-        </div>
-      </main>
+        {/* Mobile Sidebar */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 z-40 bg-black/50 lg:hidden" 
+            onClick={() => setSidebarOpen(false)}
+          >
+            <aside 
+              className="fixed inset-y-0 left-0 z-50 w-72 bg-white border-r h-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()} 
+            >
+              <SidebarContent />
+            </aside>
+          </div>
+        )}
 
-      <Footer />
+        {/* Main Content */}
+        <main className="col-span-1 lg:col-span-3 bg-slate-100 h-full overflow-y-auto flex flex-col">
+          <MainContent />
+        </main>
+      </div>
     </div>
   );
 }

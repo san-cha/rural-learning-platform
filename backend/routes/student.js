@@ -2,7 +2,18 @@ import express from "express";
 import Student from "../models/Student.js";
 import ClassModel from "../models/Class.js";
 import { protect } from "../middleware/authMiddleware.js";
-import { setGrade, getAllClasses } from '../controllers/studentController.js';
+import { student } from "../middleware/roleMiddleware.js";
+
+// Import controller functions
+import { 
+  setGrade, 
+  getAllClasses, 
+  getClassContent,
+  markMaterialComplete,
+  getAssessment,
+  getSubmission,
+  submitAssessment
+} from '../controllers/studentController.js';
 
 const router = express.Router();
 
@@ -10,12 +21,14 @@ const router = express.Router();
 router.get("/classes", protect, async (req, res) => {
   try {
     const student = await Student.findOne({ userId: req.user._id }).populate({
-      path: "enrolledClasses",
-      populate: [{ path: "teacher", select: "userId" }, { path: "enrolledStudents" }],
+      path: 'enrolledClasses',
+      select: 'name description enrollmentCode'
     });
+
     if (!student) return res.json({ classes: [] });
     res.json({ classes: student.enrolledClasses });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ msg: "Server error" });
   }
 });
@@ -29,20 +42,17 @@ router.post("/enroll", protect, async (req, res) => {
       return res.status(400).json({ msg: "Enrollment code is required" });
     }
 
-    // Find the class using the enrollment code
     const klass = await ClassModel.findOne({ enrollmentCode });
     
     if (!klass) {
       return res.status(404).json({ msg: "Class not found. Please check the enrollment code." });
     }
 
-    // Find or create student profile
     let student = await Student.findOne({ userId: req.user._id });
     if (!student) {
       student = await Student.create({ userId: req.user._id, enrolledClasses: [] });
     }
 
-    // Check if student is already enrolled
     const studentId = student._id;
     const alreadyInStudent = student.enrolledClasses.some(
       (id) => id.toString() === klass._id.toString()
@@ -55,17 +65,15 @@ router.post("/enroll", protect, async (req, res) => {
       return res.status(400).json({ msg: "You are already enrolled in this class" });
     }
 
-    // Add student to class and class to student
     student.enrolledClasses.push(klass._id);
     klass.enrolledStudents.push(studentId);
 
     await student.save();
     await klass.save();
 
-    // Populate and return updated student data
     const populated = await Student.findById(student._id).populate({
       path: "enrolledClasses",
-      populate: [{ path: "teacher", select: "userId" }, { path: "enrolledStudents" }],
+      select: "name description"
     });
 
     res.status(200).json({ 
@@ -78,8 +86,17 @@ router.post("/enroll", protect, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+// Set/Update student's grade
 router.put('/set-grade', protect, setGrade);
+
+// Get all available classes for enrollment
 router.get('/all-classes', protect, getAllClasses);
+
+// Get class content (materials + assignments)
+router.get('/class/:classId/content', protect, student, getClassContent);
+
+// Mark material/assignment as complete
+router.post('/material/:materialId/complete', protect, student, markMaterialComplete);
+
 export default router;
-
-

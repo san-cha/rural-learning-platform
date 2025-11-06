@@ -10,6 +10,24 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const fetchUser = async () => {
+    try {
+      console.log("AuthContext: Re-fetching user...");
+      const res = await axios.get('/auth/me', { withCredentials: true });
+      if (res.data) { 
+        setUser(res.data);
+        localStorage.setItem("user", JSON.stringify(res.data));
+        return true;
+      }
+    } catch (err) {
+      console.error("AuthContext: Failed to fetch user", err);
+      // If this fails, the token is likely invalid. Log them out.
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
+      return false;
+    }
+  };
   useEffect(() => {
     let isActive = true;
     const checkUser = async () => {
@@ -61,7 +79,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, fetchUser }}>
       {children}
     </AuthContext.Provider>
   );
