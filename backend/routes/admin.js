@@ -5,6 +5,8 @@ import Teacher from "../models/Teacher.js";
 import ClassModel from "../models/Class.js";
 import Ticket from "../models/Ticket.js";
 import { protect, isAdmin } from "../middleware/authMiddleware.js";
+import ContentModule from "../models/ContentModule.js";
+// import { adminAuth } from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -64,7 +66,22 @@ router.get("/students", protect, isAdmin, async (req, res) => {
   }
 });
 
-export default router;
+router.get('/content', protect, isAdmin, async (req, res) => { // 👈 Use protect, isAdmin
+      try {
+        // Fetch necessary fields for the dashboard table
+        const modules = await ContentModule.find({})
+            .select('_id title localizationStatus offlineDownloads status')
+            .lean(); 
+
+        res.json({
+            success: true,
+            modules
+        });
+    } catch (error) {
+        console.error("Error fetching content:", error);
+        res.status(500).json({ success: false, message: 'Server error fetching content.' });
+    }
+});
 
 // Extra: list classes (for completeness; UI may or may not use this)
 router.get("/classes", protect, isAdmin, async (req, res) => {
@@ -75,3 +92,5 @@ router.get("/classes", protect, isAdmin, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+export default router;

@@ -67,6 +67,6 @@ app.use("/auth", authRoutes);
 app.use("/teacher", teacherRoutes);
 app.use("/student", studentRoutes);
 app.use("/admin", adminRoutes);
-app.use('/api/tickets', ticketRoutes); 
+app.use('/api/tickets', ticketRoutes);
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
