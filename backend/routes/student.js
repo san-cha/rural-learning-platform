@@ -10,12 +10,16 @@ import {
   getAllClasses, 
   getClassContent,
   markMaterialComplete,
-  getAssessment,
-  getSubmission,
-  submitAssessment
+  getAssessment,           // NEW
+  getSubmission,           // NEW
+  submitAssessment         // NEW
 } from '../controllers/studentController.js';
 
 const router = express.Router();
+
+router.get('/assessment/:assessmentId', protect, student, getAssessment);
+router.get('/assessment/:assessmentId/submission', protect, student, getSubmission);
+router.post('/assessment/:assessmentId/submit', protect, student, submitAssessment);
 
 // Get classes the current student is enrolled in
 router.get("/classes", protect, async (req, res) => {

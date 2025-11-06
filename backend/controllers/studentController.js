@@ -5,30 +5,24 @@ import Student from '../models/Student.js';
 import ContentModule from '../models/ContentModule.js'; 
 import Material from '../models/Material.js';         
 import Assignment from '../models/Assignment.js';
-import Submission from '../models/Submission.js'; // You'll need to create this model
+import Submission from '../models/Submission.js'; // Add this import at the top
 
-
+// Then add these 3 functions:
 export const getAssessment = async (req, res) => {
   try {
     const { assessmentId } = req.params;
-
     const assignment = await Assignment.findById(assessmentId);
     
     if (!assignment) {
       return res.status(404).json({ msg: 'Assessment not found' });
     }
-
     res.status(200).json(assignment);
-
   } catch (error) {
     console.error("Error fetching assessment:", error);
     res.status(500).json({ msg: 'Server error' });
   }
 };
 
-// @desc    Get student's submission for an assessment
-// @route   GET /student/assessment/:assessmentId/submission
-// @access  Private (for students)
 export const getSubmission = async (req, res) => {
   try {
     const { assessmentId } = req.params;
@@ -42,31 +36,24 @@ export const getSubmission = async (req, res) => {
     if (!submission) {
       return res.status(404).json({ msg: 'No submission found' });
     }
-
     res.status(200).json({ submission });
-
   } catch (error) {
     console.error("Error fetching submission:", error);
     res.status(500).json({ msg: 'Server error' });
   }
 };
 
-// @desc    Submit an assessment (quiz or text assignment)
-// @route   POST /student/assessment/:assessmentId/submit
-// @access  Private (for students)
 export const submitAssessment = async (req, res) => {
   try {
     const { assessmentId } = req.params;
     const userId = req.user._id;
     const { answers, textSubmission } = req.body;
 
-    // Find the assignment
     const assignment = await Assignment.findById(assessmentId);
     if (!assignment) {
       return res.status(404).json({ msg: 'Assessment not found' });
     }
 
-    // Check if already submitted
     const existingSubmission = await Submission.findOne({
       assignmentId: assessmentId,
       studentId: userId
@@ -82,7 +69,7 @@ export const submitAssessment = async (req, res) => {
       submittedAt: new Date()
     };
 
-    // Handle quiz submission (auto-grade)
+    // Auto-grade quiz
     if (answers && assignment.questions && assignment.questions.length > 0) {
       let score = 0;
       const totalScore = assignment.questions.length;
@@ -99,20 +86,12 @@ export const submitAssessment = async (req, res) => {
       submissionData.grade = Math.round((score / totalScore) * 100);
     }
 
-    // Handle text assignment submission (needs manual grading)
     if (textSubmission) {
       submissionData.textSubmission = textSubmission;
-      // Grade and feedback will be added by teacher later
     }
 
     const submission = await Submission.create(submissionData);
-
-    res.status(201).json({ 
-      success: true, 
-      msg: 'Assessment submitted successfully',
-      submission 
-    });
-
+    res.status(201).json({ success: true, msg: 'Assessment submitted successfully', submission });
   } catch (error) {
     console.error("Error submitting assessment:", error);
     res.status(500).json({ msg: 'Server error' });
