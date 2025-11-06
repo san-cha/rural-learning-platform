@@ -48,15 +48,32 @@ const AuthPage = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    // If already logged in, redirect to dashboard for their role
-    if (user && user.role) {
-      if (user.role === "student") navigate("/student-dashboard", { replace: true });
-      else if (user.role === "teacher") navigate("/teacher-dashboard", { replace: true });
-      else if (user.role === "admin") navigate("/admin-dashboard", { replace: true });
-      else if (user.role === "technician") navigate("/tech-dashboard", { replace: true });
-      else navigate("/", { replace: true });
-    }
-  }, [user, navigate]);
+    // If already logged in, redirect to dashboard for their role
+    if (user && user.role) {
+      
+      if (user.role === "student") {
+        // === NEW LOGIC START ===
+        // If they are a student AND their grade is not set (it will be null/undefined from the backend),
+        // force them to the setup page.
+        if (user.grade === null || user.grade === undefined) {
+          navigate("/setup-grade", { replace: true });
+        } else {
+          // Otherwise, they are a fully setup student.
+          navigate("/student-dashboard", { replace: true });
+        }
+        // === NEW LOGIC END ===
+
+      } else if (user.role === "teacher") {
+        navigate("/teacher-dashboard", { replace: true });
+      } else if (user.role === "admin") {
+        navigate("/admin-dashboard", { replace: true });
+      } else if (user.role === "technician") {
+        navigate("/tech-dashboard", { replace: true });
+      } else {
+        navigate("/", { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
 
   const handleInputChange = (e) => {
@@ -109,48 +126,65 @@ const AuthPage = () => {
 
 
   const handleRegister = async (e) => {
-    e.preventDefault();
+    e.preventDefault();
 
-    if (registerData.password !== registerData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    if (registerData.password !== registerData.confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
 
-    setIsLoading(true);
-    setError(null);
+    setIsLoading(true);
+    setError(null);
 
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
-        {
-          name: registerData.fullName,
-          email: registerData.email,
-          phone: registerData.phoneNumber,
-          dob: registerData.dob,
-          password: registerData.password,
-          role: registerData.role,
-        },
-        {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        }
-      );
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/register`,
+        {
+          name: registerData.fullName,
+          email: registerData.email,
+          phone: registerData.phoneNumber,
+         dob: registerData.dob,
+          password: registerData.password,
+          role: registerData.role,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
 
-      const data = res.data;
+      const data = res.data;
 
-      if (data.success) {
+      if (data.success) {
+        // === NEW LOGIC START ===
+        // Registration was successful, now LOG THEM IN automatically.
+        // This will update the 'user' in useAuth and trigger the useEffect hook,
+        // which will (if student) redirect them to '/setup-grade'.
         
-        setActiveTab("login");
-      } else {
-        setError(data.message || "Registration failed. Please try again.");
-      }
-    } catch (err) {
-      console.error("Register error:", err);
-      setError("An unexpected error occurred. Please check the console.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        // We use email as the loginIdentifier. You can change this to registerData.phoneNumber
+        // if your 'login' function uses phone instead of email.
+        const loginIdentifier = registerData.email; 
+        
+        await login(
+          loginIdentifier,
+          registerData.password,
+          registerData.role
+        );
+        
+        // No need to navigate or setActiveTab here, the useEffect will handle it.
+        // === NEW LOGIC END ===
+      } else {
+        setError(data.message || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Register error:", err);
+      // Give a more specific error from the backend if possible
+      const errMsg = err.response?.data?.message || "An unexpected error occurred. Please try again.";
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   const ErrorMessage = ({ message }) => {

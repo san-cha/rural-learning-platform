@@ -2,9 +2,11 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AuthPage from "./pages/AuthPage.jsx";
 import StudentDashboard from "./modules/student/StudentDashboard.jsx";
+import GradeSetup from "./modules/student/GradeSetup.jsx";
 import LessonDetail from "./modules/student/LessonDetail.jsx";
 import Assessment from "./modules/student/Assessment.jsx";
 import StudentCourses from "./modules/student/StudentCourses.jsx";
+import FindClasses from "./modules/student/FindClasses.jsx";
 import StudentNotifications from "./modules/student/StudentNotifications.jsx";
 import StudentSettings from "./modules/student/StudentSettings.jsx";
 import StudentEnroll from "./modules/student/StudentEnroll.jsx";
@@ -45,6 +47,7 @@ function App() {
           <Route path="/lesson/:id" element={<LessonDetail />} />
           <Route path="/assessment/:id" element={<Assessment />} />
           <Route path="/student-courses" element={<StudentCourses />} />
+          <Route path="/find-classes" element={<FindClasses />} />
           <Route path="/student-notifications" element={<StudentNotifications />} />
           <Route path="/student-enroll" element={<StudentEnroll />} />
 
@@ -69,10 +72,22 @@ function App() {
           </Route>
 
           {/* Student-protected routes */}
-          <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
-            <Route path="/student-settings" element={<StudentSettings />} />
-          </Route>
+          {/* Student-protected routes */}
+          <Route element={<ProtectedRoute allowedRoles={["student"]} />}>
+            {/* This is our new onboarding page. ProtectedRoute will handle logic. */}
+            <Route path="/setup-grade" element={<GradeSetup />} />
+
+            {/* Your existing protected routes */}
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
+            <Route path="/student-settings" element={<StudentSettings />} />
+
+            {/* Your formerly "public" routes are now safe and protected */}
+            <Route path="/lesson/:id" element={<LessonDetail />} />
+            <Route path="/assessment/:id" element={<Assessment />} />
+            <Route path="/student-courses" element={<StudentCourses />} />
+            <Route path="/student-notifications" element={<StudentNotifications />} />
+            {/* As you noted, /student-enroll is unused, so we will create a new /find-class page later */}
+          </Route>
 
           <Route element={<ProtectedRoute allowedRoles={["technician"]} />}>
             <Route path="/tech-dashboard" element={<TechDashboard />} />

@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../components/ui/Card"; // Assuming Card components are in this path
+} from "../../components/ui/Card"; // Assuming Card components are in this path - corrected path if needed
 import Button from "../../components/ui/Button.jsx"; // Assuming Button component is in this path
 import {
   Home,
@@ -17,8 +17,10 @@ import {
   Library,
   BookCheck,
   TrendingUp,
+  Search, // <-- NEW ICON
 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+// --- Assuming these paths are correct from your project root ---
+import { useAuth } from "../../contexts/AuthContext.jsx"; 
 import axios from "../../api/axiosInstance.jsx";
 
 const StudentDashboard = () => {
@@ -56,14 +58,14 @@ const StudentDashboard = () => {
   }, []);
 
   const SidebarLink = ({ to, icon: Icon, children }) => (
-  <Link
-    to={to}
-    className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 transition-all hover:text-white hover:bg-slate-700/50"
-  >
-    <Icon className="h-5 w-5" />
-    {children}
-  </Link>
-);
+    <Link
+      to={to}
+      className="flex items-center gap-3 rounded-lg px-3 py-3 text-slate-300 transition-all hover:text-white hover:bg-slate-700/50"
+    >
+      <Icon className="h-5 w-5" />
+      {children}
+    </Link>
+  );
 
   const handleLessonClick = (classId) => {
     navigate(`/lesson/${classId}`);
@@ -90,6 +92,10 @@ const StudentDashboard = () => {
               <SidebarLink to="/student-courses" icon={Library}>
                 My Courses
               </SidebarLink>
+              {/* --- NEW SIDEBAR LINK --- */}
+              <SidebarLink to="/find-classes" icon={Search}>
+                Find a Class
+              </SidebarLink>
               <SidebarLink to="/student-notifications" icon={Bell}>
                 Notifications
               </SidebarLink>
@@ -112,7 +118,8 @@ const StudentDashboard = () => {
           <h1 className="text-xl font-semibold flex-1">Dashboard</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-slate-700 hidden sm:inline">
-              Welcome, {studentName}
+              {/* --- MODIFIED: Show grade from user context --- */}
+              Welcome, {studentName} (Grade {user?.grade || 'N/A'})
             </span>
             <Button variant="outline" size="sm" onClick={logout}>
               <LogOut className="h-4 w-4" />
@@ -121,6 +128,29 @@ const StudentDashboard = () => {
         </header>
 
         <main className="flex flex-1 flex-col gap-8 p-6 overflow-auto">
+          
+          {/* --- NEW "FIND A CLASS" CARD --- */}
+          {/* This is a new section added at the top of the main content */}
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-2xl text-white">Ready to learn something new?</CardTitle>
+              <CardDescription className="text-blue-100">
+                Browse all available classes and use the enrollment code to join.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link to="/find-classes">
+                <Button 
+                  variant="secondary" 
+                  className="bg-white text-blue-600 font-bold text-lg px-8 py-6 shadow-md hover:bg-gray-100 transform hover:-translate-y-0.5 transition-all"
+                >
+                  <Search className="h-5 w-5 mr-2" />
+                  Find a Class to Join
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           {/* Overview Cards */}
           <div>
             <h2 className="text-2xl font-bold tracking-tight mb-4">Overview</h2>
@@ -194,7 +224,7 @@ const StudentDashboard = () => {
                   </div>
                   {/* Progress Badge */}
                   <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 text-xs font-semibold text-blue-700">
-                      0% Complete
+                    0% Complete
                   </div>
                   {/* Progress Bar */}
                   <div className="w-full bg-slate-200 h-1.5">
@@ -203,8 +233,14 @@ const StudentDashboard = () => {
                 </div>
               ))}
             </div>
+            {/* --- MODIFIED: Clearer message if no classes --- */}
             {!loading && !error && Array.isArray(classes) && classes.length === 0 && (
-              <div className="text-sm text-slate-500">No classes enrolled yet.</div>
+              <div className="text-center text-sm text-slate-500 bg-white p-10 rounded-lg shadow-sm">
+                You haven't enrolled in any classes yet.
+                <Link to="/find-classes" className="text-blue-600 font-semibold hover:underline ml-1">
+                  Click here to find one!
+                </Link>
+              </div>
             )}
           </div>
         </main>

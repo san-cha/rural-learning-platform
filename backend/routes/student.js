@@ -2,6 +2,7 @@ import express from "express";
 import Student from "../models/Student.js";
 import ClassModel from "../models/Class.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { setGrade, getAllClasses } from '../controllers/studentController.js';
 
 const router = express.Router();
 
@@ -77,7 +78,8 @@ router.post("/enroll", protect, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
-
+router.put('/set-grade', protect, setGrade);
+router.get('/all-classes', protect, getAllClasses);
 export default router;
 
 

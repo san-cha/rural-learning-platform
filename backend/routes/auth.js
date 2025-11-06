@@ -101,10 +101,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/me", protect, (req, res) => {
-  res.json({ user: req.user });
-});
-
 router.post("/logout", (req, res) => {
   res.clearCookie("token", COOKIE_OPTIONS);
   res.json({ msg: "Logged out successfully" });
@@ -141,6 +137,26 @@ router.delete("/delete-account", protect, async (req, res) => {
   } catch (e) {
     res.status(500).json({ msg: "Server error" });
   }
+});
+
+// @desc    Get current user's profile
+// @route   GET /api/auth/me
+router.get('/me', protect, async (req, res) => {
+  try {
+    // req.user._id is from your 'protect' middleware
+    const user = await User.findById(req.user._id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+router.get('/test', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Auth route is working!' });
 });
 
 export default router;

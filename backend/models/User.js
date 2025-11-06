@@ -8,6 +8,7 @@ const UserSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   dob: { type: Date, required: true },
   role: { type: String, required: true, enum: ['student', 'teacher', 'admin', 'technician'] },
+  grade: {type: Number,default: null},
   password: { type: String, required: true },
 });
 
