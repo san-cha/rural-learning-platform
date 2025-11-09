@@ -48,7 +48,7 @@ export default function StudentCourses() {
       setLoading(true);
       setError('');
       try {
-        const res = await axios.get('/student/classes');
+        const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/student/classes`);
         if (!isActive) return;
         setClasses(Array.isArray(res?.data?.classes) ? res.data.classes : []);
       } catch (e) {

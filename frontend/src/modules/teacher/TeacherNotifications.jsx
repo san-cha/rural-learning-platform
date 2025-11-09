@@ -14,7 +14,7 @@ const TeacherNotifications = () => {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.get('/teacher/notifications');
+      const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/teacher/notifications`);
       setNotifications(Array.isArray(res?.data?.notifications) ? res.data.notifications : []);
     } catch (e) {
       setError('Failed to load notifications');

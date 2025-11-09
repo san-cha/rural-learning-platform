@@ -585,7 +585,7 @@ const AdminDashboard = () => {
       try {
           // 🎯 Use axios.get for consistency with /admin/users and /admin/stats
           // This ensures the URL prefix and Authorization headers are handled correctly.
-          const response = await axios.get('/admin/content'); 
+          const response = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/admin/content`); 
           
           // Axios response data is automatically parsed and stored in the .data property
           const data = response.data; 

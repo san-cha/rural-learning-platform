@@ -60,7 +60,7 @@ export default function LessonDetail() {
         setIsLoading(true);
         setError(null);
 
-        const res = await axios.get(`/student/class/${classId}/content`);
+        const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/student/class/${classId}/content`);
         const { classDetails, content } = res.data;
 
         setClassDetails(classDetails);

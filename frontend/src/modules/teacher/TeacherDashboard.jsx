@@ -31,7 +31,7 @@ const TeacherDashboard = () => {
       setLoading(true);
       setError("");
       try {
-        const res = await axios.get("/teacher/dashboard-data");
+        const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/teacher/dashboard-data`);
         if (!isActive) return;
         setDashboardData({
           totalStudentsCount: res?.data?.totalStudentsCount || 0,

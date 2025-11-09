@@ -29,7 +29,7 @@ const TeacherAssignmentEdit = () => {
       setError("");
       console.log("Fetching assignment with ID:", assignmentId);
       try {
-        const res = await axios.get(`/teacher/assignments/${assignmentId}`);
+        const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/teacher/assignments/${assignmentId}`);
         console.log("Assignment fetch response:", res.data);
         if (!isActive) return;
         const assignmentData = res?.data?.assignment;

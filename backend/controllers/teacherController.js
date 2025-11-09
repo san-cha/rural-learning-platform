@@ -419,13 +419,23 @@ export const createAssignment = async (req, res) => {
       return res.status(403).json({ msg: "Unauthorized to create assignment for this class" });
     }
 
-    // Handle file upload (if file was uploaded via multer)
+    // Handle file uploads (Cloudinary via uploadMiddleware)
     let contentURLs = [];
-    if (req.file) {
-      // File path will be available in req.file.path
-      // In production, you'd upload to cloud storage and get a URL
-      const fileUrl = `/uploads/${req.file.filename}`;
-      contentURLs.push(fileUrl);
+    if (req.files && req.files.length > 0) {
+      // req.files is an array of uploaded files from Cloudinary
+      // Each file has a 'path' property which is the Cloudinary URL
+      contentURLs = req.files.map(file => file.path);
+    }
+
+    // Parse quizData if it's a string (from FormData)
+    let parsedQuizData = quizData;
+    if (typeof quizData === 'string') {
+      try {
+        parsedQuizData = JSON.parse(quizData);
+      } catch (e) {
+        console.error("Error parsing quizData:", e);
+        parsedQuizData = null;
+      }
     }
 
     // Handle different assignment types
@@ -439,9 +449,9 @@ export const createAssignment = async (req, res) => {
       dueDate: dueDate ? new Date(dueDate) : null,
     };
 
-    if (assignmentType === "manual-quiz" && quizData) {
+    if (assignmentType === "manual-quiz" && parsedQuizData) {
       assignmentData.quizData = {
-        questions: Array.isArray(quizData.questions) ? quizData.questions : [],
+        questions: Array.isArray(parsedQuizData.questions) ? parsedQuizData.questions : [],
       };
     } else if (assignmentType === "text-to-quiz" && rawText) {
       const processedQuiz = processTextToQuiz(rawText);
@@ -756,3 +766,96 @@ export const getClassMaterials = async (req, res) => {
   }
 };
 
+/**
+ * Get all submissions for an assignment (Google Classroom style)
+ * Shows which students turned in work and which didn't
+ * GET /teacher/assignments/:assignmentId/submissions
+ */
+export const getAssignmentSubmissions = async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+    const teacher = await Teacher.findOne({ userId: req.user._id });
+    
+    if (!teacher) {
+      return res.status(404).json({ msg: "Teacher profile not found" });
+    }
+
+    // Find the assignment
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ msg: "Assignment not found" });
+    }
+
+    // Verify assignment belongs to this teacher
+    if (assignment.teacherId.toString() !== teacher._id.toString()) {
+      return res.status(403).json({ msg: "Unauthorized to view this assignment" });
+    }
+
+    // Get the class to find all enrolled students
+    const klass = await ClassModel.findById(assignment.classId)
+      .populate({
+        path: 'enrolledStudents',
+        populate: {
+          path: 'userId',
+          select: 'name email'
+        }
+      });
+
+    if (!klass) {
+      return res.status(404).json({ msg: "Class not found" });
+    }
+
+    // Get all submissions for this assignment
+    const Submission = (await import('../models/Submission.js')).default;
+    const submissions = await Submission.find({ assignmentId: assignmentId })
+      .populate('studentId', 'name email')
+      .sort({ submittedAt: -1 });
+
+    // Create a map of submissions by student ID
+    const submissionMap = {};
+    submissions.forEach(sub => {
+      submissionMap[sub.studentId._id.toString()] = sub;
+    });
+
+    // Build the response with all students
+    const studentsWithStatus = klass.enrolledStudents.map(student => {
+      const studentUserId = student.userId._id.toString();
+      const submission = submissionMap[studentUserId];
+      
+      return {
+        studentId: studentUserId,
+        studentName: student.userId.name,
+        studentEmail: student.userId.email,
+        status: submission ? 'turned-in' : 'not-submitted',
+        submission: submission || null,
+        submittedAt: submission?.submittedAt || null,
+        grade: submission?.grade || null,
+        feedback: submission?.feedback || null
+      };
+    });
+
+    // Separate into turned in and not submitted
+    const turnedIn = studentsWithStatus.filter(s => s.status === 'turned-in');
+    const notSubmitted = studentsWithStatus.filter(s => s.status === 'not-submitted');
+
+    res.json({
+      assignment: {
+        _id: assignment._id,
+        title: assignment.title,
+        description: assignment.description,
+        dueDate: assignment.dueDate,
+        assignmentType: assignment.assignmentType
+      },
+      summary: {
+        totalStudents: studentsWithStatus.length,
+        turnedIn: turnedIn.length,
+        notSubmitted: notSubmitted.length,
+        graded: turnedIn.filter(s => s.grade !== null && s.grade !== undefined).length
+      },
+      students: studentsWithStatus
+    });
+  } catch (error) {
+    console.error("Error fetching assignment submissions:", error);
+    res.status(500).json({ msg: "Server error" });
+  }
+};

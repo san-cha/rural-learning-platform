@@ -7,15 +7,110 @@ import Material from '../models/Material.js';
 import Assignment from '../models/Assignment.js';
 import Submission from '../models/Submission.js'; // Add this import at the top
 
-// Then add these 3 functions:
+/**
+ * Get content metadata for student view page (SECURE - strips quiz answers)
+ * This is for the "Turn In" page where students view assignment details
+ * GET /student/content/:id
+ */
+export const getContentMetadata = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    // Find the student to verify enrollment
+    const student = await Student.findOne({ userId: userId });
+    if (!student) {
+      return res.status(404).json({ msg: 'Student profile not found' });
+    }
+
+    // Try to find as Assignment first, then as Material
+    let content = await Assignment.findById(id).lean();
+    let contentType = 'assignment';
+
+    if (!content) {
+      content = await Material.findById(id).lean();
+      contentType = 'material';
+    }
+
+    if (!content) {
+      return res.status(404).json({ msg: 'Content not found' });
+    }
+
+    // Verify student is enrolled in the class
+    const isEnrolled = student.enrolledClasses.some(
+      classId => classId.toString() === content.classId.toString()
+    );
+
+    if (!isEnrolled) {
+      return res.status(403).json({ msg: 'You are not enrolled in this class' });
+    }
+
+    // SECURITY: Strip out quiz answers if this is a quiz assignment
+    if (contentType === 'assignment' && content.assignmentType === 'manual-quiz') {
+      // Remove the correctAnswer field from each question
+      if (content.quizData && content.quizData.questions) {
+        content.quizData.questions = content.quizData.questions.map(q => ({
+          question: q.question,
+          options: q.options,
+          // correctAnswer is intentionally omitted
+        }));
+      }
+    }
+
+    // Check if student has already submitted
+    let submission = null;
+    if (contentType === 'assignment') {
+      submission = await Submission.findOne({
+        assignmentId: id,
+        studentId: userId
+      }).lean();
+    }
+
+    res.status(200).json({
+      content: {
+        ...content,
+        contentType,
+      },
+      submission,
+    });
+  } catch (error) {
+    console.error("Error fetching content metadata:", error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+/**
+ * Get assessment for quiz start page (includes questions for taking quiz)
+ * This is ONLY for the quiz-taking page, not the view page
+ * GET /student/assessment/:assessmentId
+ */
 export const getAssessment = async (req, res) => {
   try {
     const { assessmentId } = req.params;
+    const userId = req.user._id;
+
+    // Find the student to verify enrollment
+    const student = await Student.findOne({ userId: userId });
+    if (!student) {
+      return res.status(404).json({ msg: 'Student profile not found' });
+    }
+
     const assignment = await Assignment.findById(assessmentId);
     
     if (!assignment) {
       return res.status(404).json({ msg: 'Assessment not found' });
     }
+
+    // Verify student is enrolled in the class
+    const isEnrolled = student.enrolledClasses.some(
+      classId => classId.toString() === assignment.classId.toString()
+    );
+
+    if (!isEnrolled) {
+      return res.status(403).json({ msg: 'You are not enrolled in this class' });
+    }
+
+    // Return full assignment including quizData for taking the quiz
     res.status(200).json(assignment);
   } catch (error) {
     console.error("Error fetching assessment:", error);
@@ -69,24 +164,44 @@ export const submitAssessment = async (req, res) => {
       submittedAt: new Date()
     };
 
-    // Auto-grade quiz
-    if (answers && assignment.questions && assignment.questions.length > 0) {
-      let score = 0;
-      const totalScore = assignment.questions.length;
-
-      assignment.questions.forEach((question, index) => {
-        if (answers[index] === question.correctAnswer) {
-          score++;
-        }
-      });
-
-      submissionData.answers = answers;
-      submissionData.score = score;
-      submissionData.totalScore = totalScore;
-      submissionData.grade = Math.round((score / totalScore) * 100);
+    // Handle file assignment submissions (Cloudinary upload)
+    if (assignment.assignmentType === 'file' && req.file) {
+      // req.file.path contains the Cloudinary URL
+      submissionData.textSubmission = req.file.path; // Store Cloudinary URL in textSubmission field
     }
 
-    if (textSubmission) {
+    // Handle quiz submissions - Auto-grade
+    if (assignment.assignmentType === 'manual-quiz' && answers) {
+      // Parse answers if it's a string (from FormData)
+      let parsedAnswers = answers;
+      if (typeof answers === 'string') {
+        try {
+          parsedAnswers = JSON.parse(answers);
+        } catch (e) {
+          console.error("Error parsing answers:", e);
+          parsedAnswers = [];
+        }
+      }
+
+      if (assignment.quizData && assignment.quizData.questions && assignment.quizData.questions.length > 0) {
+        let score = 0;
+        const totalScore = assignment.quizData.questions.length;
+
+        assignment.quizData.questions.forEach((question, index) => {
+          if (parsedAnswers[index] === question.correctAnswer) {
+            score++;
+          }
+        });
+
+        submissionData.answers = parsedAnswers;
+        submissionData.score = score;
+        submissionData.totalScore = totalScore;
+        submissionData.grade = Math.round((score / totalScore) * 100);
+      }
+    }
+
+    // Handle text submissions (legacy support)
+    if (textSubmission && !req.file) {
       submissionData.textSubmission = textSubmission;
     }
 
@@ -94,6 +209,40 @@ export const submitAssessment = async (req, res) => {
     res.status(201).json({ success: true, msg: 'Assessment submitted successfully', submission });
   } catch (error) {
     console.error("Error submitting assessment:", error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+/**
+ * Unsubmit an assessment (Google Classroom style)
+ * DELETE /student/assessment/:assessmentId/unsubmit
+ */
+export const unsubmitAssessment = async (req, res) => {
+  try {
+    const { assessmentId } = req.params;
+    const userId = req.user._id;
+
+    // Find the submission
+    const submission = await Submission.findOne({
+      assignmentId: assessmentId,
+      studentId: userId
+    });
+
+    if (!submission) {
+      return res.status(404).json({ msg: 'No submission found' });
+    }
+
+    // Check if already graded - don't allow unsubmit if graded
+    if (submission.grade !== null && submission.grade !== undefined && submission.gradedAt) {
+      return res.status(400).json({ msg: 'Cannot unsubmit a graded assignment' });
+    }
+
+    // Delete the submission
+    await Submission.findByIdAndDelete(submission._id);
+
+    res.status(200).json({ success: true, msg: 'Submission withdrawn successfully' });
+  } catch (error) {
+    console.error("Error unsubmitting assessment:", error);
     res.status(500).json({ msg: 'Server error' });
   }
 };

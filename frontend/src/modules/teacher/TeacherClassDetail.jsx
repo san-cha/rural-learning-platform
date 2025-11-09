@@ -22,7 +22,7 @@ const TeacherClassDetail = () => {
       setLoading(true);
       setError("");
       try {
-        const res = await axios.get(`/teacher/classes/${classId}`);
+        const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/teacher/classes/${classId}`);
         if (!isActive) return;
         setClassData(res?.data?.class || null);
       } catch (e) {
@@ -189,8 +189,19 @@ const TeacherClassDetail = () => {
                           e.stopPropagation();
                           navigate(`/teacher-assignments/${assignment._id}`);
                         }}
+                        className="mr-2"
                       >
                         View/Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/teacher-assignments/${assignment._id}/submissions`);
+                        }}
+                      >
+                        View Submissions
                       </Button>
                     </div>
                   ))}
@@ -297,7 +308,7 @@ const AssignmentCreationForm = ({ classId, assignmentType, setAssignmentType, on
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [quizQuestions, setQuizQuestions] = useState([{ question: "", options: ["", "", "", ""], correctAnswer: 0 }]);
   const [rawText, setRawText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -332,12 +343,15 @@ const AssignmentCreationForm = ({ classId, assignmentType, setAssignmentType, on
       if (dueDate) formData.append("dueDate", dueDate);
       
       if (assignmentType === "file") {
-        if (!file) {
-          setError("Please select a file to upload");
+        if (!files || files.length === 0) {
+          setError("Please select at least one file to upload");
           setLoading(false);
           return;
         }
-        formData.append("file", file);
+        // Append each file with the field name "files"
+        Array.from(files).forEach(file => {
+          formData.append("files", file);
+        });
       } else if (assignmentType === "manual-quiz") {
         formData.append("quizData", JSON.stringify({ questions: quizQuestions }));
       } else if (assignmentType === "text-to-quiz") {
@@ -442,14 +456,20 @@ const AssignmentCreationForm = ({ classId, assignmentType, setAssignmentType, on
           {/* File Upload Type */}
           {assignmentType === "file" && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Upload File (Image or PDF) *</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Upload Files (Images or PDFs) *</label>
               <input
                 type="file"
                 accept="image/*,application/pdf"
-                onChange={(e) => setFile(e.target.files[0])}
+                onChange={(e) => setFiles(e.target.files)}
+                multiple
                 required
                 className="w-full border rounded-md px-3 py-2"
               />
+              {files && files.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {files.length} file(s) selected
+                </p>
+              )}
             </div>
           )}
 
@@ -688,4 +708,3 @@ const EnrollmentCodeCopyButton = ({ code }) => {
 };
 
 export default TeacherClassDetail;
-

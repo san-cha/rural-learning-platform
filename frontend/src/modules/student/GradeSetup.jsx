@@ -57,9 +57,8 @@ const GradeSetup = () => {
       if (!user) return; // Wait for context to provide the basic user
       
       try {
-        // === THIS IS THE CORRECTED URL (no /api) ===
         const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/me`,
+          `${import.meta.env.VITE_FRONTEND_URL}/auth/me`,
           { withCredentials: true }
         );
         setFullUser(res.data); // Save the full user data

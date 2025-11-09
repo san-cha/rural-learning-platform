@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     try {
       console.log("AuthContext: Re-fetching user...");
-      const res = await axios.get('/auth/me', { withCredentials: true });
+      const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}auth/me`, { withCredentials: true });
       if (res.data) { 
         setUser(res.data);
         localStorage.setItem("user", JSON.stringify(res.data));
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
           if (isActive) setLoading(false);
           return;
         }
-        const res = await axios.get('/auth/me', { withCredentials: true });
+        const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}auth/me`, { withCredentials: true });
         if (isActive) setUser(res?.data?.user || null);
       } catch (err) {
         if (isActive) setUser(null);

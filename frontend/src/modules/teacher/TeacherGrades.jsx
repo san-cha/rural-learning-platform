@@ -18,7 +18,7 @@ const TeacherGrades = () => {
       setLoading(true);
       setError("");
       try {
-        const res = await axios.get('/teacher/classes');
+        const res = await axios.get(`${import.meta.env.VITE_FRONTEND_URL}/teacher/classes`);
         if (!isActive) return;
         const list = Array.isArray(res?.data?.classes) ? res.data.classes : [];
         const found = list.find(c => c?._id === id);

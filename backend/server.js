@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 connectDB();
 
-const allowedOrigins = ["http://localhost:3000", "http://localhost:5173"];
+const allowedOrigins = ["http://localhost:3000", "http://localhost:5173", process.env.FRONTEND_URL];
 
 const app = express();
 const PORT = process.env.PORT || 5000;

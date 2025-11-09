@@ -3,6 +3,7 @@ import Student from "../models/Student.js";
 import ClassModel from "../models/Class.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { student } from "../middleware/roleMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 
 // Import controller functions
 import { 
@@ -10,18 +11,25 @@ import {
   getAllClasses, 
   getClassContent,
   markMaterialComplete,
-  getAssessment,           // NEW
-  getSubmission,           // NEW
-  submitAssessment,        // NEW
-  getClassesByGradeLevel,  // NEW
-  getDashboardOverview     // NEW
+  getContentMetadata,      // NEW - Secure endpoint for student view page
+  getAssessment,           // For quiz start page
+  getSubmission,           
+  submitAssessment,
+  unsubmitAssessment,      // NEW - Unsubmit functionality
+  getClassesByGradeLevel,  
+  getDashboardOverview     
 } from '../controllers/studentController.js';
 
 const router = express.Router();
 
+// Secure content metadata endpoint (strips quiz answers)
+router.get('/content/:id', protect, student, getContentMetadata);
+
+// Quiz-specific endpoints
 router.get('/assessment/:assessmentId', protect, student, getAssessment);
 router.get('/assessment/:assessmentId/submission', protect, student, getSubmission);
-router.post('/assessment/:assessmentId/submit', protect, student, submitAssessment);
+router.post('/assessment/:assessmentId/submit', protect, student, upload.single('submissionFile'), submitAssessment);
+router.delete('/assessment/:assessmentId/unsubmit', protect, student, unsubmitAssessment);
 
 // Get classes the current student is enrolled in
 router.get("/classes", protect, async (req, res) => {
